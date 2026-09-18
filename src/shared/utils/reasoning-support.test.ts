@@ -59,3 +59,27 @@ describe("reasoning support", () => {
 		})
 	})
 })
+
+describe("local model reasoning effort", () => {
+	it("offers effort options for local qwen tags", () => {
+		supportsReasoningEffortForModel("qwen3.8:27b-mlx-64k", undefined).should.equal(true)
+	})
+
+	it("offers effort options for other local reasoning families", () => {
+		supportsReasoningEffortForModel("magistral:24b", undefined).should.equal(true)
+		supportsReasoningEffortForModel("gpt-oss:20b", undefined).should.equal(true)
+	})
+
+	it("still reports no options for a non-reasoning local model", () => {
+		supportsReasoningEffortForModel("bge-m3:latest", undefined).should.equal(false)
+	})
+
+	it("offers effort options for the QwQ reasoning family", () => {
+		supportsReasoningEffortForModel("qwq:32b", undefined).should.equal(true)
+	})
+
+	it("reports no options for non-reasoning variants of a reasoning family", () => {
+		supportsReasoningEffortForModel("qwen3-embedding:latest", undefined).should.equal(false)
+		supportsReasoningEffortForModel("qwen2.5-vl:7b", undefined).should.equal(false)
+	})
+})

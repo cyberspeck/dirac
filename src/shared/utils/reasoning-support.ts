@@ -10,6 +10,13 @@ function modelIdSupportsReasoningEffort(modelId?: string): boolean {
 	if (!modelId) return false
 
 	const id = modelId.toLowerCase()
+
+	// Non-reasoning variants that would otherwise match a family substring
+	// below (e.g. `qwen3-embedding`, `qwen2.5-vl`).
+	if (id.includes("embed") || id.includes("-vl") || id.includes("rerank")) {
+		return false
+	}
+
 	return (
 		id.includes("gemini") ||
 		id.includes("gpt") ||
@@ -17,7 +24,11 @@ function modelIdSupportsReasoningEffort(modelId?: string): boolean {
 		id.includes("/o") ||
 		id.startsWith("o") ||
 		id.includes("grok") ||
-		id.includes("deepseek")
+		id.includes("deepseek") ||
+		id.includes("qwen") ||
+		id.includes("qwq") ||
+		id.includes("magistral") ||
+		id.includes("minimax")
 	)
 }
 

@@ -27,6 +27,84 @@ interface OpenAiHandlerOptions extends CommonApiHandlerOptions {
 	reasoningEffort?: string
 }
 
+// Persisted across calls to splitThinkTags so a delimiter split across a transport chunk
+// boundary (e.g. "<thi" | "nk>...") is buffered rather than leaked or swallowed.
+export interface ThinkSplitState {
+	insideThink: boolean
+	carry: string
+}
+
+// Longest k (1 <= k < marker.length) such that s ends with marker's first k characters.
+// Used to detect a delimiter that is only partially present at the end of the scanned text.
+function longestPartialSuffix(s: string, marker: string): number {
+	const max = Math.min(marker.length - 1, s.length)
+	for (let k = max; k >= 1; k--) {
+		if (s.slice(s.length - k) === marker.slice(0, k)) {
+			return k
+		}
+	}
+	return 0
+}
+
+// Splits inline <think>...</think> content out of a delta chunk into reasoning/text.
+// Pure function: an OpenAI-compatible provider that sends <think> tags inline (e.g. Ollama)
+// rather than as a separate reasoning_content field can carry state across chunks since a
+// think block, or even the "<think>"/"</think>" delimiter itself, may span a chunk boundary.
+// A trailing partial delimiter is held back in `state.carry` instead of being emitted, so the
+// caller must flush any non-empty carry once the stream ends (see the handler's post-loop code).
+// An orphan "</think>" with no matching opener is treated as malformed input and is not
+// buffered here — it leaks into text unchanged, same as before this function existed.
+export function splitThinkTags(
+	content: string,
+	state: ThinkSplitState = { insideThink: false, carry: "" },
+): { reasoning: string; text: string; state: ThinkSplitState } {
+	let insideThink = state.insideThink
+	let reasoning = ""
+	let text = ""
+	let rest = state.carry + content
+
+	while (rest.length > 0) {
+		if (insideThink) {
+			const close = rest.indexOf("</think>")
+			if (close === -1) {
+				reasoning += rest
+				rest = ""
+				break
+			}
+			reasoning += rest.slice(0, close)
+			rest = rest.slice(close + "</think>".length)
+			insideThink = false
+			continue
+		}
+		const open = rest.indexOf("<think>")
+		if (open === -1) {
+			text += rest
+			rest = ""
+			break
+		}
+		text += rest.slice(0, open)
+		rest = rest.slice(open + "<think>".length)
+		insideThink = true
+	}
+
+	let carry = ""
+	if (insideThink) {
+		const partial = longestPartialSuffix(reasoning, "</think>")
+		if (partial > 0) {
+			carry = reasoning.slice(reasoning.length - partial)
+			reasoning = reasoning.slice(0, reasoning.length - partial)
+		}
+	} else {
+		const partial = longestPartialSuffix(text, "<think>")
+		if (partial > 0) {
+			carry = text.slice(text.length - partial)
+			text = text.slice(0, text.length - partial)
+		}
+	}
+
+	return { reasoning, text, state: { insideThink, carry } }
+}
+
 export class OpenAiHandler implements ApiHandler {
 	private options: OpenAiHandlerOptions
 	private client: OpenAI | undefined
@@ -214,13 +292,24 @@ export class OpenAiHandler implements ApiHandler {
 
 		const toolCallProcessor = new ToolCallProcessor()
 		let stopReason: string | undefined
+		let thinkState: ThinkSplitState = { insideThink: false, carry: "" }
 
 		for await (const chunk of stream) {
 			const delta = chunk.choices?.[0]?.delta
 			if (delta?.content) {
-				yield {
-					type: "text",
-					text: delta.content,
+				const split = splitThinkTags(delta.content, thinkState)
+				thinkState = split.state
+				if (split.reasoning) {
+					yield {
+						type: "reasoning",
+						reasoning: split.reasoning,
+					}
+				}
+				if (split.text) {
+					yield {
+						type: "text",
+						text: split.text,
+					}
 				}
 			}
 
@@ -253,6 +342,16 @@ export class OpenAiHandler implements ApiHandler {
 					...formatOpenAiCompatibleUsage(chunk.usage, this.getModel().info),
 					stopReason,
 				}
+			}
+		}
+
+		// A trailing carry means the stream ended mid-delimiter (or with a genuine stray "<").
+		// Flush it rather than silently dropping it.
+		if (thinkState.carry) {
+			if (thinkState.insideThink) {
+				yield { type: "reasoning", reasoning: thinkState.carry }
+			} else {
+				yield { type: "text", text: thinkState.carry }
 			}
 		}
 	}

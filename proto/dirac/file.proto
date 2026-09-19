@@ -65,7 +65,7 @@ service FileService {
   rpc ifFileExistsRelativePath(StringRequest) returns (BooleanResponse);
 
   // Open a file in editor by a relative path
-  rpc openFileRelativePath(StringRequest) returns (Empty);
+  rpc openFileRelativePath(OpenFileAtLineRequest) returns (Empty);
 
   // Refreshes all hook toggles (discovers hooks and their enabled state)
   rpc refreshHooks(EmptyRequest) returns (HooksToggles);

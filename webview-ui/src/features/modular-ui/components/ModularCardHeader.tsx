@@ -1,6 +1,6 @@
 import { Card, CardStatus, isFinalStatus } from "@shared/ExtensionMessage"
 import { readSubagentCardData } from "@shared/subagents"
-import { StringRequest } from "@shared/proto/dirac/common"
+import { OpenFileAtLineRequest } from "@shared/proto/dirac/common"
 import { extractFirstPath } from "@shared/string"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
@@ -96,7 +96,11 @@ export const ModularCardHeader: React.FC<ModularCardHeaderProps> = ({
 				<button
 					aria-label={`Open ${filePath}`}
 					className="shrink-0 rounded-sm p-1 opacity-60 transition-opacity hover:bg-foreground/10 hover:opacity-100 focus-visible:opacity-100"
-					onClick={() => FileServiceClient.openFileRelativePath(StringRequest.create({ value: filePath }))}
+					onClick={() =>
+						FileServiceClient.openFileRelativePath(
+							OpenFileAtLineRequest.create({ path: filePath, line: card.locations?.[0]?.line }),
+						)
+					}
 					title={`Open ${filePath}`}
 					type="button">
 					<ExternalLinkIcon className="size-2.5" />

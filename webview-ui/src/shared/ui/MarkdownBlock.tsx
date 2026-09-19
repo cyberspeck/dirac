@@ -161,7 +161,7 @@ const InlineCodeWithFileCheck: React.FC<ComponentProps<"code"> & { [key: string]
 				<button
 					aria-label={`Open ${filePath} in editor`}
 					className="ml-0.5 inline-flex size-4 align-middle items-center justify-center rounded-sm bg-transparent p-0 text-preformat opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
-					onClick={() => FileServiceClient.openFileRelativePath({ value: filePath })}
+					onClick={() => FileServiceClient.openFileRelativePath({ path: filePath })}
 					title={`Open ${filePath} in editor`}
 					type="button">
 					<SquareArrowOutUpRightIcon className="size-3" />

@@ -108,8 +108,8 @@ export class FileServiceClient extends ProtoBusClient {
 	static async ifFileExistsRelativePath(request: proto.dirac.StringRequest): Promise<proto.dirac.BooleanResponse> {
 		return this.makeUnaryRequest("ifFileExistsRelativePath", request, proto.dirac.StringRequest.toJSON, proto.dirac.BooleanResponse.fromJSON)
 	}
-	static async openFileRelativePath(request: proto.dirac.StringRequest): Promise<proto.dirac.Empty> {
-		return this.makeUnaryRequest("openFileRelativePath", request, proto.dirac.StringRequest.toJSON, proto.dirac.Empty.fromJSON)
+	static async openFileRelativePath(request: proto.dirac.OpenFileAtLineRequest): Promise<proto.dirac.Empty> {
+		return this.makeUnaryRequest("openFileRelativePath", request, proto.dirac.OpenFileAtLineRequest.toJSON, proto.dirac.Empty.fromJSON)
 	}
 	static async refreshHooks(request: proto.dirac.EmptyRequest): Promise<proto.dirac.HooksToggles> {
 		return this.makeUnaryRequest("refreshHooks", request, proto.dirac.EmptyRequest.toJSON, proto.dirac.HooksToggles.fromJSON)

@@ -16,6 +16,11 @@ message StringRequest {
   string value = 2;
 }
 
+message OpenFileAtLineRequest {
+  string path = 1;
+  optional int32 line = 2;
+}
+
 message StringArrayRequest {
   repeated string value = 2;
 }

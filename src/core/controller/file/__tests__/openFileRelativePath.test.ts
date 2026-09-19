@@ -1,6 +1,6 @@
 import { Controller } from "@core/controller"
 import * as openFileIntegration from "@integrations/misc/open-file"
-import { Empty, StringRequest } from "@shared/proto/dirac/common"
+import { Empty, OpenFileAtLineRequest } from "@shared/proto/dirac/common"
 import * as pathUtils from "@utils/path"
 import { expect } from "chai"
 import { afterEach, beforeEach, describe, it } from "mocha"
@@ -39,8 +39,8 @@ describe("openFileRelativePath", () => {
 	it("should return Empty response on successful execution", async () => {
 		getWorkspacePathStub.resolves("/workspace")
 
-		const request = StringRequest.create({
-			value: "src/test.ts",
+		const request = OpenFileAtLineRequest.create({
+			path: "src/test.ts",
 		})
 
 		const result = await openFileRelativePath(mockController, request)
@@ -55,8 +55,8 @@ describe("openFileRelativePath", () => {
 
 		getWorkspacePathStub.resolves(workspacePath)
 
-		const request = StringRequest.create({
-			value: relativePath,
+		const request = OpenFileAtLineRequest.create({
+			path: relativePath,
 		})
 
 		await openFileRelativePath(mockController, request)
@@ -70,8 +70,8 @@ describe("openFileRelativePath", () => {
 		const invalidPaths = ["", undefined]
 
 		for (const invalidPath of invalidPaths) {
-			const request = StringRequest.create({
-				value: invalidPath,
+			const request = OpenFileAtLineRequest.create({
+				path: invalidPath,
 			})
 
 			await openFileRelativePath(mockController, request)
@@ -88,8 +88,8 @@ describe("openFileRelativePath", () => {
 			getWorkspacePathStub.resolves(workspaceValue)
 			consoleErrorStub.resetHistory()
 
-			const request = StringRequest.create({
-				value: "src/test.ts",
+			const request = OpenFileAtLineRequest.create({
+				path: "src/test.ts",
 			})
 
 			const result = await openFileRelativePath(mockController, request)
@@ -107,8 +107,8 @@ describe("openFileRelativePath", () => {
 
 		getWorkspacePathStub.resolves(workspacePath)
 
-		const request = StringRequest.create({
-			value: relativePath,
+		const request = OpenFileAtLineRequest.create({
+			path: relativePath,
 		})
 
 		await openFileRelativePath(mockController, request)

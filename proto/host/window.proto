@@ -49,6 +49,7 @@ message ShowTextDocumentOptions {
   optional bool preview = 1;
   optional bool preserve_focus = 2;
   optional int32 view_column = 3;
+  optional int32 line = 4;
 }
 
 message TextEditorInfo {

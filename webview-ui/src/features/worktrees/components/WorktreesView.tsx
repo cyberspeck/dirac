@@ -114,7 +114,7 @@ const WorktreesView = ({ onDone }: WorktreesViewProps) => {
 			)
 			if (!result.success) throw new Error(result.message || "Failed to create .worktreeinclude")
 			setHasWorktreeInclude(true)
-			await FileServiceClient.openFileRelativePath({ value: ".worktreeinclude" })
+			await FileServiceClient.openFileRelativePath({ path: ".worktreeinclude" })
 		} catch (error) {
 			setError(error instanceof Error ? error.message : "Failed to create .worktreeinclude")
 		} finally {

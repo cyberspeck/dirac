@@ -3,7 +3,7 @@ import { SquareArrowOutUpRightIcon } from "lucide-react"
 import React from "react"
 import { CardDecorator } from "./types"
 import { FileServiceClient } from "@/shared/api/grpc-client"
-import { StringRequest } from "@shared/proto/dirac/common"
+import { OpenFileAtLineRequest } from "@shared/proto/dirac/common"
 
 export const DiffDecorator: CardDecorator = {
 	id: "diff",
@@ -13,7 +13,9 @@ export const DiffDecorator: CardDecorator = {
 			e.stopPropagation()
 			const path = card.locations?.[0]?.path ?? card.diffs?.[0]?.path
 			if (path) {
-				FileServiceClient.openFileRelativePath(StringRequest.create({ value: path })).catch((err) =>
+				FileServiceClient.openFileRelativePath(
+					OpenFileAtLineRequest.create({ path, line: card.locations?.[0]?.line }),
+				).catch((err) =>
 					console.error("Failed to open file from ModularCard:", err),
 				)
 			}

@@ -21,6 +21,7 @@ import { DiracClient } from "@shared/dirac"
 import { DEFAULT_LANGUAGE_SETTINGS, getLanguageKey, type LanguageDisplay } from "@shared/Languages"
 import * as path from "path"
 import { filterSkillsByProviderCapabilities } from "@/shared/skills"
+import type { SkillMetadata } from "@/shared/skills"
 import { getAvailableCores } from "@/utils/os"
 import { detectBestShell } from "@/utils/shell-detection"
 import type { ContextManager } from "../context/context-management/ContextManager"
@@ -36,6 +37,7 @@ import type { MessageStateHandler } from "./message-state"
 import type { TaskMessenger } from "./TaskMessenger"
 import type { TaskState } from "./TaskState"
 import type { ToolExecutor } from "./ToolExecutor"
+import { ToolRegistry } from "./tools/registry/ToolRegistry"
 import type { TaskRequestRuntime } from "./runtime/TaskRequestRuntime"
 import { bindToolSnapshotToRequestRuntime } from "./runtime/TaskRequestRuntime"
 import type { TaskExecutionProfile } from "./TaskExecutionProfile"
@@ -63,6 +65,23 @@ export interface TaskRequestBuilderContext {
 		fullHistory: any[]
 		deletedRange?: [number, number]
 	}) => Promise<void>
+}
+
+export function resolveAvailableSkills(input: {
+	discovered: SkillMetadata[]
+	globalSkillsToggles: Record<string, boolean>
+	localSkillsToggles: Record<string, boolean>
+	yoloModeToggled: boolean
+	registry: Pick<ToolRegistry, "isEnabled">
+}): SkillMetadata[] {
+	if (!input.registry.isEnabled("use_skill")) return []
+
+	return input.discovered.filter((skill) => {
+		if (input.yoloModeToggled && skill.interactiveOnly) return false
+		if (skill.source === "builtin") return true
+		const toggles = skill.source === "global" ? input.globalSkillsToggles : input.localSkillsToggles
+		return toggles[skill.path] !== false
+	})
 }
 
 export async function buildApiRequestParams(
@@ -156,11 +175,12 @@ export async function buildApiRequestParams(
 	})
 	const globalSkillsToggles = settings.globalSkillsToggles ?? {}
 	const localSkillsToggles = workspaceConfiguration.localSkillsToggles ?? {}
-	const availableSkills = providerSkills.filter((skill) => {
-		if (settings.yoloModeToggled && skill.interactiveOnly) return false
-		if (skill.source === "builtin") return true
-		const toggles = skill.source === "global" ? globalSkillsToggles : localSkillsToggles
-		return toggles[skill.path] !== false
+	const availableSkills = resolveAvailableSkills({
+		discovered: providerSkills,
+		globalSkillsToggles,
+		localSkillsToggles,
+		yoloModeToggled: !!settings.yoloModeToggled,
+		registry: ToolRegistry.getInstance(),
 	})
 	ctx.taskState.availableSkills = availableSkills
 

@@ -11,9 +11,15 @@ import { AgentConfigLoader } from "@core/task/tools/subagent/AgentConfigLoader"
 import type { SystemPromptContext } from "@core/prompts/system-prompt/types"
 import { afterEach, beforeEach, describe, it } from "mocha"
 import sinon from "sinon"
+import type { SkillMetadata } from "@/shared/skills"
 import { HostProvider } from "@/hosts/host-provider"
-import { buildApiRequestParams, type TaskRequestBuilderContext } from "../TaskRequestBuilder"
+import { buildApiRequestParams, resolveAvailableSkills, type TaskRequestBuilderContext } from "../TaskRequestBuilder"
 import type { TaskRequestRuntime } from "../runtime/TaskRequestRuntime"
+import type { ToolRegistry } from "../tools/registry/ToolRegistry"
+
+function makeRegistryWithToggles(toggles: Record<string, boolean>): Pick<ToolRegistry, "isEnabled"> {
+	return { isEnabled: (toolId: string) => toggles[toolId] === true }
+}
 
 const providerInfo = {
 	providerId: "anthropic",
@@ -288,5 +294,33 @@ describe("TaskRequestBuilder", () => {
 		assert.equal(activatedRuntime.api, requestRuntime.api)
 		assert.equal(activatedRuntime.toolSnapshot, result.toolSnapshot)
 		assert.equal(writePromptMetadataArtifacts.firstCall.args[0].providerInfo, result.providerInfo)
+	})
+
+	describe("resolveAvailableSkills", () => {
+		const discovered: SkillMetadata[] = [{ path: "/skills/writing", source: "global", name: "writing", description: "" }]
+
+		it("reports no available skills when the use_skill tool is disabled", () => {
+			const registry = makeRegistryWithToggles({ use_skill: false, list_skills: false })
+			const skillsResult = resolveAvailableSkills({
+				discovered,
+				globalSkillsToggles: {},
+				localSkillsToggles: {},
+				yoloModeToggled: false,
+				registry,
+			})
+			assert.equal(skillsResult.length, 0)
+		})
+
+		it("reports discovered skills when the use_skill tool is enabled", () => {
+			const registry = makeRegistryWithToggles({ use_skill: true })
+			const skillsResult = resolveAvailableSkills({
+				discovered,
+				globalSkillsToggles: {},
+				localSkillsToggles: {},
+				yoloModeToggled: false,
+				registry,
+			})
+			assert.equal(skillsResult.length, 1)
+		})
 	})
 })

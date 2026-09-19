@@ -44,6 +44,7 @@ export interface SystemPromptContext {
 	readonly subagentsEnabled?: boolean
 	readonly utilityModelConfigured?: boolean
 	readonly diracWebToolsEnabled?: boolean
+	readonly listSkillsEnabled?: boolean
 	readonly isMultiRootEnabled?: boolean
 	readonly workspaceRoots?: Array<{ path: string; name: string; vcs?: string }>
 	readonly isSubagentsEnabledAndCliInstalled?: boolean

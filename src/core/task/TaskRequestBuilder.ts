@@ -227,6 +227,7 @@ export async function buildApiRequestParams(
 		lowVerbosityEnabled: settings.lowVerbosityEnabled,
 		subagentsEnabled: settings.subagentsEnabled,
 		diracWebToolsEnabled: settings.diracWebToolsEnabled && featureFlagsService.getWebtoolsEnabled(),
+		listSkillsEnabled: ToolRegistry.getInstance().isEnabled("list_skills"),
 		isMultiRootEnabled: multiRootEnabled,
 		workspaceRoots,
 		isSubagentRun: false,

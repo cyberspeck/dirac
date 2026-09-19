@@ -11,6 +11,7 @@ import fs from "fs/promises"
 import * as path from "path"
 import { MessageStateHandler } from "./message-state"
 import { TaskState } from "./TaskState"
+import { ToolRegistry } from "./tools/registry/ToolRegistry"
 
 const CODE_EXTENSIONS = new Set([
 	".ts",
@@ -158,7 +159,7 @@ export class EnvironmentManager {
 			if (mode === "plan") {
 				details += `\nPLAN MODE\n${formatResponse.planModeInstructions()}`
 			} else {
-				details += `\nACT MODE\n${getEditingFilesInstructions()}`
+				details += `\nACT MODE\n${getEditingFilesInstructions({ executeCommandEnabled: ToolRegistry.getInstance().isEnabled("execute_command") })}`
 			}
 		}
 

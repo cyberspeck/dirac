@@ -92,7 +92,8 @@ export class PromptBuilder {
 		})
 
 		if (filtered.length > 10) {
-			section += `\n... and ${filtered.length - 10} more. Use the 'list_skills' tool to see the full list.\n`
+			const listSkillsHint = this.context.listSkillsEnabled ? " Use the 'list_skills' tool to see the full list." : ""
+			section += `\n... and ${filtered.length - 10} more.${listSkillsHint}\n`
 		}
 
 		return section

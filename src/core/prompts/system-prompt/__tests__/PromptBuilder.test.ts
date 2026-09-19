@@ -38,5 +38,25 @@ describe("PromptBuilder", () => {
 			prompt.should.not.containEql("list_skills")
 			prompt.should.not.containEql("AVAILABLE SKILLS")
 		})
+
+		const manySkills = Array.from({ length: 12 }, (_, i) => ({
+			path: `/skills/skill-${i}`,
+			source: "global" as const,
+			name: `skill-${i}`,
+			description: "test skill",
+		}))
+
+		it("omits the list_skills sentence but keeps the overflow count when list_skills is disabled", async () => {
+			const context = { ...mockContext, skills: manySkills, listSkillsEnabled: false }
+			const prompt = await new PromptBuilder(context).build()
+			prompt.should.not.containEql("list_skills")
+			prompt.should.containEql("and 2 more")
+		})
+
+		it("keeps the list_skills sentence when list_skills is enabled", async () => {
+			const context = { ...mockContext, skills: manySkills, listSkillsEnabled: true }
+			const prompt = await new PromptBuilder(context).build()
+			prompt.should.containEql("list_skills")
+		})
 	})
 })

@@ -93,7 +93,7 @@ export const WithCopyButton = forwardRef<HTMLDivElement, WithCopyButtonProps>(
 				{hasCopyFunctionality && (
 					<div
 						className={cn(
-							"absolute z-10 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity",
+							"absolute z-10 opacity-30 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
 							POSITION_CLASSES[position],
 							copyButtonClassname,
 						)}>

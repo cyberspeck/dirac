@@ -6,7 +6,6 @@ import { SearchDecorator } from "./SearchDecorator"
 import { BugReportDecorator } from "./BugReportDecorator"
 import { CompletionDecorator } from "./CompletionDecorator"
 import { NewTaskDecorator } from "./NewTaskDecorator"
-import { PlanDecorator } from "./PlanDecorator"
 import { CardDecorator } from "./types"
 
 export const CARD_DECORATORS: CardDecorator[] = [
@@ -17,7 +16,6 @@ export const CARD_DECORATORS: CardDecorator[] = [
 	SearchDecorator,
 	BugReportDecorator,
 	NewTaskDecorator,
-	PlanDecorator,
 	CompletionDecorator,
 ]
 

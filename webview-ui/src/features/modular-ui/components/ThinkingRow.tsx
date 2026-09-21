@@ -2,6 +2,7 @@ import { ChevronDownIcon, ChevronRightIcon, Lightbulb } from "lucide-react"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useAutoScroll } from "@/shared/hooks/useAutoScroll"
+import { CopyButton } from "@/shared/ui/CopyButton"
 import { ReasoningTimeline } from "../ReasoningTimeline"
 import { IncrementalText } from "./IncrementalText"
 
@@ -157,6 +158,11 @@ export const ThinkingRow = memo(
 				{/* Expanded reasoning content */}
 				{isExpanded && (
 					<div className="relative mt-1 animate-in fade-in duration-200">
+						{!isStreaming && reasoningContent && (
+							<div className="absolute top-0 right-2 z-10">
+								<CopyButton ariaLabel="Copy reasoning" className="opacity-60 hover:opacity-100" textToCopy={reasoningContent} />
+							</div>
+						)}
 						<div
 							className="flex max-h-[200px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [direction:ltr]"
 							onScroll={checkScrollable}

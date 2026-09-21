@@ -4,6 +4,7 @@ import { OpenFileAtLineRequest } from "@shared/proto/dirac/common"
 import { extractFirstPath } from "@shared/string"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
+import { CopyButton } from "@/shared/ui/CopyButton"
 import { FileServiceClient } from "@/shared/api/grpc-client"
 import { ChevronDownIcon, ChevronRightIcon, ExternalLinkIcon } from "lucide-react"
 import { DynamicIcon } from "lucide-react/dynamic"
@@ -35,6 +36,7 @@ export const ModularCardHeader: React.FC<ModularCardHeaderProps> = ({
 	const [currentTime, setCurrentTime] = useState(() => Date.now())
 	const filePath = getCardFilePath(card)
 	const decorators = useMemo(() => CARD_DECORATORS.filter((decorator) => decorator.shouldApply(card)), [card])
+	const hasHeaderActionDecorator = decorators.some((decorator) => decorator.renderHeaderActions)
 	const iconSizeClass = "size-3.5"
 	const elapsedTime = getSubagentCardElapsedTime(card, currentTime)
 
@@ -92,7 +94,7 @@ export const ModularCardHeader: React.FC<ModularCardHeaderProps> = ({
 				</span>
 			</button>
 
-			{filePath && !decorators.some((decorator) => decorator.renderHeaderActions) && (
+			{filePath && !hasHeaderActionDecorator && (
 				<button
 					aria-label={`Open ${filePath}`}
 					className="shrink-0 rounded-sm p-1 opacity-60 transition-opacity hover:bg-foreground/10 hover:opacity-100 focus-visible:opacity-100"
@@ -105,6 +107,10 @@ export const ModularCardHeader: React.FC<ModularCardHeaderProps> = ({
 					type="button">
 					<ExternalLinkIcon className="size-2.5" />
 				</button>
+			)}
+
+			{card.body && !hasHeaderActionDecorator && (
+				<CopyButton ariaLabel="Copy" className="opacity-60 hover:opacity-100" textToCopy={card.body} />
 			)}
 
 			{decorators.map((decorator) => (

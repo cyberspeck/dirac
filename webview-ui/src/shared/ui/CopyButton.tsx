@@ -10,6 +10,7 @@ interface CopyButtonProps {
 	onCopy?: () => string | undefined | null
 	className?: string
 	ariaLabel?: string
+	title?: string
 }
 
 interface WithCopyButtonProps {
@@ -34,7 +35,7 @@ const POSITION_CLASSES = {
 /**
  * Base copy button component with clipboard functionality
  */
-export const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy, onCopy, className, ariaLabel }) => {
+export const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy, onCopy, className, ariaLabel, title }) => {
 	const [copied, setCopied] = useState(false)
 	const [copyFailed, setCopyFailed] = useState(false)
 
@@ -60,7 +61,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy, onCopy, clas
 			className={cn("scale-90", className)}
 			onClick={handleCopy}
 			size="icon"
-			title={copyFailed ? "Copy failed" : undefined}
+			title={copied ? "Copied" : copyFailed ? "Copy failed" : title || ariaLabel || "Copy"}
 			variant="icon">
 			{copied ? <CheckCheckIcon className="size-2" /> : <CopyIcon className="size-2" />}
 		</Button>

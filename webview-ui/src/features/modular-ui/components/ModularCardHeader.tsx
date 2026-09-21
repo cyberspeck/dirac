@@ -109,8 +109,13 @@ export const ModularCardHeader: React.FC<ModularCardHeaderProps> = ({
 				</button>
 			)}
 
-			{card.body && !hasHeaderActionDecorator && (
-				<CopyButton ariaLabel="Copy" className="opacity-60 hover:opacity-100" textToCopy={card.body} />
+			{card.body && (
+				<CopyButton
+					ariaLabel="Copy output"
+					title="Copy output"
+					className="opacity-60 hover:opacity-100"
+					textToCopy={card.body}
+				/>
 			)}
 
 			{decorators.map((decorator) => (

@@ -10,7 +10,14 @@ export const TerminalDecorator: CardDecorator = {
 	renderHeaderActions: (card: Card) => {
 		// Heuristic: the command is often the first line of the body or in the header
 		const command = card.body?.split("\n")[0] || card.header
-		return <CopyButton className="opacity-60 hover:opacity-100" textToCopy={command} />
+		return (
+			<CopyButton
+				ariaLabel="Copy command"
+				title="Copy command"
+				className="opacity-60 hover:opacity-100"
+				textToCopy={command}
+			/>
+		)
 	},
 	renderFooterExtra: (card: Card) => {
 		if (!card.body) return null

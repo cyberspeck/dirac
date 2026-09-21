@@ -36,6 +36,7 @@ describe("TaskPromptArtifacts", () => {
 		await writePromptMetadataArtifacts(
 			{
 				taskId: "task-1",
+				requestSeq: 1,
 				cwd,
 				writePromptMetadataEnabled: true,
 				writePromptMetadataDirectory: "artifacts",
@@ -52,7 +53,7 @@ describe("TaskPromptArtifacts", () => {
 			},
 		)
 
-		const markdown = await fs.readFile(path.join(artifactDir, "task-task-1-debug.md"), "utf8")
+		const markdown = await fs.readFile(path.join(artifactDir, "task-task-1-debug-001.md"), "utf8")
 		assert.match(markdown, /## System Prompt\n\nsystem prompt contents/)
 		assert.match(markdown, /"name": "list_files"/)
 		assert.match(markdown, /### \[USER\] \[TRUNCATED\]\nfirst message/)
@@ -60,10 +61,34 @@ describe("TaskPromptArtifacts", () => {
 		assert.equal(await fs.readFile(path.join(artifactDir, ".gitignore"), "utf8"), "*\n!.gitignore\n")
 	})
 
+	it("writes one artifact file per request instead of overwriting across a multi-call turn", async () => {
+		const artifactDir = path.join(cwd, "artifacts")
+		const baseParams = {
+			cwd,
+			writePromptMetadataEnabled: true,
+			writePromptMetadataDirectory: "artifacts",
+		}
+
+		await writePromptMetadataArtifacts(
+			{ taskId: "task-multi", requestSeq: 1, ...baseParams },
+			{ systemPrompt: "first call", providerInfo: { providerId: "anthropic", modelId: "m" } },
+		)
+		await writePromptMetadataArtifacts(
+			{ taskId: "task-multi", requestSeq: 2, ...baseParams },
+			{ systemPrompt: "second call (the delivered answer)", providerInfo: { providerId: "anthropic", modelId: "m" } },
+		)
+
+		const first = await fs.readFile(path.join(artifactDir, "task-task-multi-debug-001.md"), "utf8")
+		const second = await fs.readFile(path.join(artifactDir, "task-task-multi-debug-002.md"), "utf8")
+		assert.match(first, /first call/)
+		assert.match(second, /second call \(the delivered answer\)/)
+	})
+
 	it("does not create artifacts when output is disabled", async () => {
 		await writePromptMetadataArtifacts(
 			{
 				taskId: "task-disabled",
+				requestSeq: 1,
 				cwd,
 				writePromptMetadataEnabled: false,
 			},

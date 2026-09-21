@@ -1336,6 +1336,7 @@ export class Task {
 		this.streamHandler.reset()
 		this.taskState.toolUseIdMap.clear()
 		this.taskState.activeVoiceStreamId = undefined
+		this.assistantStreamManager.reset()
 	}
 
 	async *attemptApiRequest(previousApiReqIndex: number, lastApiReqIndex: number, shouldCompact?: boolean): ApiStream {

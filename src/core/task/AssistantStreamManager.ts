@@ -34,4 +34,19 @@ export class AssistantStreamManager {
 			this.currentMode = "none"
 		}
 	}
+
+	/**
+	 * Clears internal state at a turn boundary WITHOUT closing the handle.
+	 *
+	 * Unlike pauseForToolCall(), this does not call activeStream.close() or touch
+	 * the messenger — the stream may already have been finalized by another path
+	 * (e.g. finalizePendingReasoningMessage closing a reasoning row when a tool
+	 * call ends the turn). Re-closing here would re-enter the messenger with a
+	 * stale stream id, which is the bug this method exists to avoid, not a fix
+	 * for it. Just drop the reference so the next chunk starts a fresh stream.
+	 */
+	reset() {
+		this.activeStream = undefined
+		this.currentMode = "none"
+	}
 }

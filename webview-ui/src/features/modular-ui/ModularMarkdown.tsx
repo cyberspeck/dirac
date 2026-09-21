@@ -44,6 +44,13 @@ export const ModularMarkdown = memo(
 		const { quoteButtonState, handleQuoteClick, handleMouseUp, contentRef } = useQuoteLogic(onSetQuote || NOOP)
 
 		if (isReasoning) {
+			// Defense-in-depth: a desynced AssistantStreamManager can still emit a
+			// phantom empty reasoning row at a turn boundary (see
+			// AssistantStreamManager.reset()). Suppress it here too rather than
+			// relying solely on the backend fix.
+			if (!content.trim() && !partial) {
+				return null
+			}
 			return (
 				<ThinkingRow
 					isExpanded={isExpanded || false}

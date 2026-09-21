@@ -4,6 +4,10 @@ import * as path from "path"
 
 export interface TaskPromptArtifactsContext {
 	taskId: string
+	// Per-request sequence number (1-based). Included in the artifact filename so a
+	// multi-call turn (e.g. the noToolsUsed retry loop) leaves one file per API
+	// request instead of each write overwriting the previous one.
+	requestSeq: number
 	cwd: string
 	writePromptMetadataEnabled: boolean
 	writePromptMetadataDirectory?: string
@@ -65,7 +69,7 @@ export async function writePromptMetadataArtifacts(
 		const gitignorePath = path.join(writeDir, ".gitignore")
 		await fs.writeFile(gitignorePath, "*\n!.gitignore\n", "utf8").catch(() => {})
 
-		const debugPath = path.join(writeDir, `task-${ctx.taskId}-debug.md`)
+		const debugPath = path.join(writeDir, `task-${ctx.taskId}-debug-${String(ctx.requestSeq).padStart(3, "0")}.md`)
 
 		let markdown = `## System Prompt\n\n${params.systemPrompt}\n\n`
 

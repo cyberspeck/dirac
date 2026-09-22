@@ -90,6 +90,12 @@ export function create() {
 
             for (const requested of paths) {
                 const { absolutePath, displayPath } = await env.workspace.resolvePath(requested)
+                // Custom tools get raw fs through env.workspace, which does not apply .diracignore; the
+                // built-ins each check it at the call site (WriteToFileTool.ts:114), so this one must too.
+                if (env.config?.services?.diracIgnoreController?.validateAccess(absolutePath) === false) {
+                    lines.push(`${displayPath}: blocked by .diracignore.`)
+                    continue
+                }
 
                 const info = await env.workspace.getFileInfo(absolutePath)
                 if (!info?.exists) {

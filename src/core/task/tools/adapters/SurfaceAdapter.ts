@@ -77,7 +77,7 @@ export class SurfaceAdapter implements ToolExecutionEnvironment {
 			this.createCard.bind(this),
 			this.createManualInteractionCard.bind(this),
 		)
-		this.interaction = buildInteractionTrait(config, this.createCard.bind(this))
+		this.interaction = buildInteractionTrait(config, this.createCard.bind(this), () => this.editor)
 		this.browser = buildBrowserTrait(config)
 		this.skills = buildSkillsTrait(config)
 		this.system = buildSystemTrait(config, this.executeCommand.bind(this))

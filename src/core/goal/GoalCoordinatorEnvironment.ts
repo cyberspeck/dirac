@@ -80,7 +80,7 @@ class GoalCoordinatorToolEnvironment implements ToolExecutionEnvironment {
 		const createManualInteractionCard = (params: Parameters<IUITrait["createManualInteractionCard"]>[0]) =>
 			wrapCard(base.ui.createManualInteractionCard(params))
 		this.ui = { ...base.ui, createCard, createManualInteractionCard }
-		this.interaction = buildInteractionTrait(base.config, createCard)
+		this.interaction = buildInteractionTrait(base.config, createCard, () => base.editor)
 	}
 
 	getCustomMetadata(): Record<string, unknown> {

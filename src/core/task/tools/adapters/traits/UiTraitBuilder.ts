@@ -1,11 +1,12 @@
 import type { UtilityPermissionRequest } from "@core/permissions/UtilityPermissionDecisionService"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { resolveWorkspacePath } from "@core/workspace"
 import { CardStatus, isFinalStatus } from "@shared/ExtensionMessage"
 import { DiracIcon } from "@shared/icons"
-import type { IUITrait, IInteractionTrait, ICardHandle, CardParams } from "../../interfaces/IToolEnvironment"
+import { DiracAskResponse } from "@shared/WebviewMessage"
+import type { CardParams, ICardHandle, IEditorTrait, IInteractionTrait, IUITrait } from "../../interfaces/IToolEnvironment"
 import type { TaskConfig } from "../../types/TaskConfig"
-import { CardHandle } from "../CardHandle"
 import { ApprovedPermissionCardHandle } from "../ApprovedPermissionCardHandle"
+import { CardHandle } from "../CardHandle"
 
 // Builds the UI trait — text streaming and card creation.
 export function buildUiTrait(
@@ -30,6 +31,7 @@ export function buildUiTrait(
 export function buildInteractionTrait(
 	config: TaskConfig,
 	createCardFn: (params: CardParams) => Promise<ICardHandle>,
+	getEditor?: () => IEditorTrait,
 ): IInteractionTrait {
 	return {
 		askPermission: async (message, preview) => {
@@ -44,7 +46,28 @@ export function buildInteractionTrait(
 				...(preview?.category ? { permissionCategory: preview.category } : {}),
 				...(preview?.rawInput ? { rawInput: preview.rawInput } : {}),
 			})
-			const result = await card.waitForInteraction()
+			// A card's diffs are never rendered in the chat (F-016); the builtins show theirs in the VS Code
+			// diff editor instead (WriteToFileTool.ts:180-190). Do the same for every caller, and only when a
+			// human will actually answer — an auto-approved card must not flash an editor open.
+			const editor = getEditor?.()
+			const reviewFiles =
+				editor && preview?.diffs?.length && card.requiresUserInteraction !== false
+					? preview.diffs.map((d) => {
+							const resolved = resolveWorkspacePath(config, d.path, "InteractionTrait.askPermission")
+							const absolutePath = typeof resolved === "string" ? resolved : resolved.absolutePath
+							return { absolutePath, displayPath: d.path, content: d.newText, originalContent: d.oldText }
+						})
+					: undefined
+			let result: Awaited<ReturnType<ICardHandle["waitForInteraction"]>>
+			try {
+				if (reviewFiles) {
+					await editor!.showReview(reviewFiles)
+					await editor!.scrollToFirstDiff()
+				}
+				result = await card.waitForInteraction()
+			} finally {
+				if (reviewFiles) await editor!.hideReview()
+			}
 			// Finalize here, not in the tool. ToolExecutorCoordinator throws
 			// "left nonterminal card(s)" on any card still WAITING_FOR_INPUT when the tool
 			// returns, and a custom tool has no reason to know that — every custom tool that

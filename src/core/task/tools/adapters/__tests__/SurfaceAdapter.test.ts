@@ -1,7 +1,7 @@
 import "should"
-import { DiracAskResponse } from "@shared/WebviewMessage"
 import { CardStatus } from "@shared/ExtensionMessage"
 import { DiracIcon } from "@shared/icons"
+import { DiracAskResponse } from "@shared/WebviewMessage"
 import { expect } from "chai"
 import sinon from "sinon"
 import { Logger } from "@/shared/services/Logger"
@@ -640,6 +640,64 @@ describe("SurfaceAdapter", () => {
 				header: "Permission Request",
 				requireApproval: true,
 			})
+		})
+
+		// F-016: a card's diffs are never drawn in the chat, so a custom tool's edit was approved
+		// from find/replace text alone. The trait opens the VS Code diff editor instead — only when
+		// a human answers, and closed again whatever the answer.
+		it("opens the diff review while a human decides, and closes it afterwards", async () => {
+			const fakeHandle = {
+				id: "card-1",
+				update: sinon.stub().resolves(),
+				appendBody: sinon.stub().resolves(),
+				finalize: sinon.stub().resolves(),
+				waitForInteraction: sinon.stub().callsFake(async () => {
+					sinon.assert.calledOnce(config.services.diffViewProvider.showReview)
+					sinon.assert.notCalled(config.services.diffViewProvider.hideReview)
+					return { action: DiracAskResponse.REJECT }
+				}),
+			}
+			// A real approval card starts WAITING_FOR_INPUT (TaskMessenger.ts:131); the helper's is RUNNING.
+			const waiting = {
+				id: "card-1",
+				header: "Permission Request",
+				status: CardStatus.WAITING_FOR_INPUT,
+				requireApproval: true,
+			}
+			config.taskMessenger.createCard = sinon.stub().resolves(Object.assign(fakeHandle, { getCard: () => waiting }))
+
+			await adapter.interaction.askPermission("May I?", {
+				category: "edit",
+				locations: [{ path: "/test/a.md" }],
+				diffs: [{ path: "a.md", oldText: "alt", newText: "neu" }],
+			})
+
+			config.services.diffViewProvider.showReview.firstCall.args[0].should.deepEqual([
+				{ absolutePath: "/test/a.md", displayPath: "a.md", content: "neu", originalContent: "alt" },
+			])
+			sinon.assert.calledOnce(config.services.diffViewProvider.hideReview)
+		})
+
+		it("does not open the diff review for an auto-approved permission", async () => {
+			config.autoApprover.shouldAutoApproveCategory = sinon.stub().resolves(true)
+			config.taskMessenger.createCard = sinon.stub().callsFake(async () =>
+				attachCardState({
+					id: "audit",
+					update: sinon.stub().resolves(),
+					appendBody: sinon.stub().resolves(),
+					finalize: sinon.stub().resolves(),
+					waitForInteraction: sinon.stub(),
+				}),
+			)
+
+			const result = await adapter.interaction.askPermission("May I?", {
+				category: "edit",
+				locations: [{ path: "/test/a.md" }],
+				diffs: [{ path: "a.md", oldText: "alt", newText: "neu" }],
+			})
+
+			result.approved.should.equal(true)
+			sinon.assert.notCalled(config.services.diffViewProvider.showReview)
 		})
 	})
 

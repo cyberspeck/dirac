@@ -4,6 +4,7 @@ export const spec = {
     description:
         "Counts characters (with and without spaces), words and lines in one or more files. " +
         "Counts the raw file text, including Markdown syntax, headings and the bibliography. " +
+        "Comment lines (> TODO: / > FRAGE:) are not counted. " +
         "With several files it also reports a total.",
     parameters: [
         {
@@ -31,8 +32,16 @@ export interface Counts {
  * astral character, and German text with umlauts may arrive decomposed (NFD), where "ä" is
  * two code points. Normalising to NFC first makes the count match what the writer sees.
  */
+/**
+ * Working notes are whole lines by convention, so removing them is a line
+ * filter. They are not manuscript text and must not reach a word count that is measured
+ * against a length requirement — the alternative is asking the model to count them and
+ * subtract, which is exactly the arithmetic a small model gets wrong.
+ */
+const COMMENT_LINE = /^[ \t]*>[ \t]*(TODO|FRAGE)\b.*$/gmu
+
 export function countText(raw: string): Counts {
-    const text = raw.normalize("NFC")
+    const text = raw.normalize("NFC").replace(COMMENT_LINE, "")
     const withoutWhitespace = text.replace(/\s/gu, "")
     const trimmed = text.trim()
     return {

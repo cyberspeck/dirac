@@ -40,6 +40,12 @@ Conventions:
 | openai | honour `reasoning_effort: "none"` instead of omitting the field | dirac-run/dirac#228 |
 | reasoning | emit a patch when reasoning is finalized by a tool call | dirac-run/dirac#229 |
 
+## Wanted, not broken
+
+Candidate tools and the research behind them live in `tools/BACKLOG.md` — user stories ranked
+for both the writing and coding use cases, the citation-encoding recommendation, and a survey
+of what existing VS Code writing extensions already do.
+
 ## Running the tests
 
 Node 26 does not work (F-010). With an LTS node:

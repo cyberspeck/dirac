@@ -1,6 +1,6 @@
 import type { UtilityPermissionRequest } from "@core/permissions/UtilityPermissionDecisionService"
 import { DiracAskResponse } from "@shared/WebviewMessage"
-import { CardStatus } from "@shared/ExtensionMessage"
+import { CardStatus, isFinalStatus } from "@shared/ExtensionMessage"
 import { DiracIcon } from "@shared/icons"
 import type { IUITrait, IInteractionTrait, ICardHandle, CardParams } from "../../interfaces/IToolEnvironment"
 import type { TaskConfig } from "../../types/TaskConfig"
@@ -43,6 +43,18 @@ export function buildInteractionTrait(
 				...(preview?.rawInput ? { rawInput: preview.rawInput } : {}),
 			})
 			const result = await card.waitForInteraction()
+			// Finalize here, not in the tool. ToolExecutorCoordinator throws
+			// "left nonterminal card(s)" on any card still WAITING_FOR_INPUT when the tool
+			// returns, and a custom tool has no reason to know that — every custom tool that
+			// asked for permission and was answered by hand hit it.
+			// Mirrors WriteToFileTool: a message instead of an answer is SKIPPED.
+			if (!isFinalStatus(card.status)) {
+				if (result.action === DiracAskResponse.MESSAGE) {
+					await card.finalize(CardStatus.SKIPPED)
+				} else {
+					await card.finalize(result.action === DiracAskResponse.APPROVE ? CardStatus.SUCCESS : CardStatus.CANCELLED)
+				}
+			}
 			return {
 				approved: result.action === DiracAskResponse.APPROVE,
 				action: result.action,

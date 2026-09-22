@@ -1,7 +1,7 @@
 {
     "name": "dirac",
-    "displayName": "Dirac",
-    "description": "Reduces API costs by more than 50%, produces better and faster work. Uses line-anchored parallel edits, AST manipulation and a whole lot of neat optimizations. Fully Open Source.",
+    "displayName": "Dirac (local-model build)",
+    "description": "A VS Code agent for writing and editing your own files with a model running locally via Ollama. Shell and browser disabled; every finished task auto-committed to git.",
     "version": "0.5.15",
     "icon": "assets/icons/icon.png",
     "workspaces": [
@@ -18,38 +18,25 @@
     "publisher": "dirac-run",
     "repository": {
         "type": "git",
-        "url": "https://github.com/dirac-run/dirac"
+        "url": "https://github.com/cyberspeck/dirac"
     },
-    "homepage": "https://dirac.run",
+    "homepage": "https://github.com/cyberspeck/dirac",
+    "bugs": {
+        "url": "https://github.com/cyberspeck/dirac/issues"
+    },
     "categories": [
         "AI",
         "Chat",
-        "Programming Languages",
-        "Education",
-        "Snippets",
-        "Testing"
+        "Education"
     ],
     "keywords": [
-        "dirac",
+        "local-llm",
+        "ollama",
+        "offline",
+        "writing-assistant",
+        "markdown",
         "coding-agent",
-        "ai-coding-agent",
-        "autonomous-coding-agent",
-        "ai-code-assistant",
-        "agentic-coding",
-        "code-generation",
-        "code-refactoring",
-        "code-review",
-        "software-engineering",
-        "developer-tools",
-        "open-source-ai",
-        "ast-editing",
-        "line-anchored-edits",
-        "multi-file-editing",
-        "context-optimization",
-        "native-tool-calling",
-        "acp",
-        "agentclientprotocol",
-        "agent-client-protocol"
+        "open-source-ai"
     ],
     "activationEvents": [
         "onLanguage",
@@ -404,6 +391,7 @@
         }
     },
     "scripts": {
+        "stamp": "node scripts/stamp-build.mjs",
         "vscode:prepublish": "npm run package",
         "compile": "npm run protos && npm-run-all -p --max-parallel 4 typecheck:root typecheck:cli typecheck:webview:app typecheck:webview:node lint prepare-extension-ripgrep-binaries build:extension",
         "compile-standalone": "npm run check-types && npm run lint && node esbuild.mjs --standalone",

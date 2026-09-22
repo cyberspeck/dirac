@@ -7,7 +7,7 @@ import type { FolderLockWithRetryResult } from "@/core/locks/types"
 import { telemetryService } from "@/services/telemetry"
 import { getErrorMessage } from "@/shared/errors"
 import { Logger } from "@/shared/services/Logger"
-import { GitOperations } from "./CheckpointGitOperations"
+import { describeAddFailure, GitOperations } from "./CheckpointGitOperations"
 import { getDefaultExclusions, getLfsPatterns } from "./CheckpointExclusions"
 import { releaseCheckpointLock, tryAcquireCheckpointLockWithRetry } from "./CheckpointLockUtils"
 import { getShadowGitPath, hashWorkingDir, validateWorkspacePath } from "./CheckpointUtils"
@@ -250,7 +250,7 @@ class CheckpointTracker {
 
 			const addFilesResult = await this.gitOperations.addCheckpointFiles(git)
 			if (!addFilesResult.success) {
-				Logger.error("Failed to add at least one file(s) to checkpoints shadow git")
+				Logger.error(describeAddFailure(addFilesResult))
 			}
 
 			const commitMessage = "checkpoint-" + this.cwdHash + "-" + this.taskId

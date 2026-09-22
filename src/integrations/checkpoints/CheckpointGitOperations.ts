@@ -9,8 +9,26 @@ import { getErrorMessage } from "@/shared/errors"
 import { Logger } from "@/shared/services/Logger"
 import { getLfsPatterns, writeExcludesFile } from "./CheckpointExclusions"
 
+/**
+ * The add failure used to be reported as "Failed to add at least one file(s) to checkpoints
+ * shadow git" with the underlying error discarded by three bare catch blocks — a message that
+ * says nothing about which file, why, or what to do. Keep git's own words and a next step.
+ */
+export function describeAddFailure(result: { error?: string }): string {
+	return (
+		"Checkpoints could not stage the workspace, so this checkpoint is incomplete and " +
+		"restoring it may not revert everything.\n" +
+		`Git reported: ${result.error ?? "no error message"}\n` +
+		"Usual causes: a file Dirac cannot read (permissions), a path too long or locked by " +
+		"another process, or a full disk. Fix the file the message names, or exclude it from " +
+		"the workspace. Checkpoints can also be turned off in Settings if they are not wanted."
+	)
+}
+
 interface CheckpointAddResult {
 	success: boolean
+	/** Why the add failed, in git's own words. Without it the failure is unactionable. */
+	error?: string
 }
 
 /**
@@ -101,8 +119,7 @@ export class GitOperations {
 
 		const addFilesResult = await this.addCheckpointFiles(git)
 		if (!addFilesResult.success) {
-			Logger.error("Failed to add at least one file(s) to checkpoints shadow git")
-			throw new Error("Failed to add at least one file(s) to checkpoints shadow git")
+			throw new Error(describeAddFailure(addFilesResult))
 		}
 
 		// Initial commit only on first repo creation
@@ -234,12 +251,12 @@ export class GitOperations {
 				try {
 					await git.add([".", "--ignore-errors"])
 					return { success: true }
-				} catch (__error) {
-					return { success: false }
+				} catch (fallbackError) {
+					return { success: false, error: getErrorMessage(fallbackError) }
 				}
 			}
-		} catch (_error) {
-			return { success: false }
+		} catch (error) {
+			return { success: false, error: getErrorMessage(error) }
 		} finally {
 			await retryWithBackoff(() => this.renameNestedGitRepos(false), {
 				operationName: "CheckpointTracker re-enable nested git repos",

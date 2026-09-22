@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "count_text",
+  "name": "count_text",
+  "scope": "workspace",
+  "entry": "tool.ts",
+  "createdBy": "dirac"
+}

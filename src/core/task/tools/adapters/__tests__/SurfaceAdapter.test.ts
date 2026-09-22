@@ -224,12 +224,14 @@ describe("SurfaceAdapter", () => {
 				runtime: { cwd: "/test", mode: "act", isSubagent: false },
 			})
 			sinon.assert.calledOnceWithExactly(config.taskMessenger.createCard, {
-				header: "Auto Approved · Permission",
+				// The tool, not the generic word "Permission": the row is the only record the
+				// user gets that this tool ran at all.
+				header: "Auto Approved · write_to_file",
 				toolName: "permission_approval",
 				icon: DiracIcon.PERMISSION_APPROVAL,
 				status: CardStatus.SUCCESS,
 				renderType: "markdown",
-				body: "**Result:** Auto Approved by permission agent\n\n**Reason:** Allowed by policy.",
+				body: "**Result:** Auto Approved\n\n**Reason:** Allowed by policy.",
 				rawInput: { tool: "write_to_file" },
 				rawOutput: { decision: "approve", reason: "Allowed by policy.", approvedTool: "write_to_file" },
 				locations: undefined,
@@ -237,6 +239,35 @@ describe("SurfaceAdapter", () => {
 			})
 			sinon.assert.notCalled(auditCardHandle.waitForInteraction)
 			result.action.should.equal(DiracAskResponse.APPROVE)
+		})
+
+		it("keeps the tool's own request text on the auto-approved card", async () => {
+			const auditCardHandle = {
+				id: "approval-card-2",
+				update: sinon.stub().resolves(),
+				appendBody: sinon.stub().resolves(),
+				finalize: sinon.stub().resolves(),
+				waitForInteraction: sinon.stub(),
+			}
+			config.permissionDecisionBinding = {
+				service: { decide: sinon.stub().resolves({ decision: "approve", reason: "Allowed by policy." }) },
+				configurationRevision: 1,
+			}
+			config.toolUse = { name: "custom_reader", params: { path: "notes.md" } }
+			config.taskMessenger.createCard = sinon.stub().resolves(attachCardState(auditCardHandle))
+
+			const handle = await adapter.ui.createCard({
+				header: "Permission Request",
+				body: "notes.md: Überschriften lesen?",
+				requireApproval: true,
+				permissionRequestKind: "tool",
+			})
+			await handle.waitForInteraction()
+
+			sinon.assert.calledWithMatch(config.taskMessenger.createCard, {
+				header: "Auto Approved · custom_reader",
+				body: "notes.md: Überschriften lesen?\n\n**Result:** Auto Approved\n\n**Reason:** Allowed by policy.",
+			})
 		})
 
 		it("uses the displayed card path for a Utility escalation", async () => {
@@ -379,7 +410,8 @@ describe("SurfaceAdapter", () => {
 
 			sinon.assert.calledWithMatch(decide, { runtime: { cwd: "/test", mode: "act", isSubagent: true } })
 			sinon.assert.calledWithMatch(config.taskMessenger.createCard, {
-				header: "Auto Approved · Permission",
+				// No config.toolUse in this path, so the adapter's own tool name is the fallback.
+				header: "Auto Approved · test-tool",
 				toolName: "permission_approval",
 				status: CardStatus.SUCCESS,
 			})

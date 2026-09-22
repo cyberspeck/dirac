@@ -125,6 +125,15 @@ export const ThinkingRow = memo(
 							{title}
 						</span>
 
+						{/* Collapsed preview — a row reading only "Thinking" is indistinguishable
+						    from an empty one, and the maintainer read a whole turn's reasoning as
+						    "little bars" (2026-09-22). */}
+						{!isExpanded && !isStreaming && reasoningContent?.trim() && (
+							<span className="min-w-0 flex-1 truncate text-xs leading-none text-description/50">
+								{firstLine(reasoningContent)}
+							</span>
+						)}
+
 						{/* Elapsed time — inline, subtle */}
 						{isStreaming && thinkingTime > 0 && (
 							<span className="ml-0.5 text-xs leading-none text-description/50">{formatTime(thinkingTime)}</span>
@@ -193,6 +202,11 @@ export const ThinkingRow = memo(
 )
 
 ThinkingRow.displayName = "ThinkingRow"
+
+/** First non-empty line of the reasoning, for the collapsed header. */
+function firstLine(content: string): string {
+	return content.split("\n").find((line) => line.trim())?.trim() ?? ""
+}
 
 function formatTime(seconds: number): string {
 	if (seconds < 60) {

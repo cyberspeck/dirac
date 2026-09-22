@@ -163,15 +163,19 @@ async function publishPermissionApprovalCard(
 	request: UtilityPermissionRequest,
 	reason: string,
 ): Promise<void> {
+	// Name the tool in the header and keep the original request in the body. Without them the
+	// row reads "Auto Approved · Permission Request" and expands to a reason — the user is never
+	// told which tool ran or what it asked for (maintainer, 2026-09-22).
+	const requestBody = params.body?.trim()
 	await createDisplayedCardFromMessenger(
 		config,
 		{
-			header: `Auto Approved · ${params.header}`,
+			header: `Auto Approved · ${request.toolCall.name}`,
 			toolName: "permission_approval",
 			icon: DiracIcon.PERMISSION_APPROVAL,
 			status: CardStatus.SUCCESS,
 			renderType: "markdown",
-			body: `**Result:** Auto Approved by permission agent\n\n**Reason:** ${reason}`,
+			body: `${requestBody ? `${requestBody}\n\n` : ""}**Result:** Auto Approved\n\n**Reason:** ${reason}`,
 			rawInput: { tool: request.toolCall.name },
 			rawOutput: { decision: "approve", reason, approvedTool: request.toolCall.name },
 			locations: params.locations,

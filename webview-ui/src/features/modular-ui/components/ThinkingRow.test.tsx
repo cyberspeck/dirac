@@ -26,6 +26,35 @@ describe("ThinkingRow", () => {
 		expect(screen.getByText("Inspecting files...")).toBeInTheDocument()
 	})
 
+	it("previews the first line of reasoning when collapsed", () => {
+		render(
+			<ThinkingRow
+				isExpanded={false}
+				isStreaming={false}
+				isVisible={true}
+				reasoningContent={"\n  The user wants all headings from the manual.\nSecond line."}
+				showTitle={true}
+			/>,
+		)
+
+		expect(screen.getByText("The user wants all headings from the manual.")).toBeInTheDocument()
+		expect(screen.queryByText("Second line.")).not.toBeInTheDocument()
+	})
+
+	it("shows no preview while streaming, where the expanded text is already live", () => {
+		render(
+			<ThinkingRow
+				isExpanded={false}
+				isStreaming={true}
+				isVisible={true}
+				reasoningContent="Inspecting files..."
+				showTitle={true}
+			/>,
+		)
+
+		expect(screen.queryByText("Inspecting files...")).not.toBeInTheDocument()
+	})
+
 	it("calls onToggle when header is clicked", () => {
 		const onToggle = vi.fn()
 

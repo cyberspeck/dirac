@@ -84,6 +84,17 @@ export async function createCardFromMessenger(
 	if (permissionCategory) {
 		const paths = (cardParams.locations ?? []).map((location) => location.path)
 		if (await config.autoApprover.shouldAutoApproveCategory(permissionCategory, paths)) {
+			// Publish the approval, as the Utility path does. An auto-approved write that leaves no
+			// card at all is a change the user was never shown.
+			await publishPermissionApprovalCard(
+				config,
+				cardParams,
+				tracker,
+				createUtilityPermissionRequest(config, cardParams),
+				permissionCategory === "edit"
+					? 'Auto-approved by the "Edit project files" setting.'
+					: 'Auto-approved by the "Read project files" setting.',
+			)
 			return new ApprovedPermissionCardHandle(cardParams)
 		}
 	}

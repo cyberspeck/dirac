@@ -130,12 +130,12 @@ describe("AutoApprove.shouldAutoApproveCategory", () => {
 		assert.equal(await autoApprove.shouldAutoApproveCategory("read", ["/outside/file.md"]), true)
 	})
 
-	it("approves when the category is on and no path was declared", async () => {
+	it("refuses when no path was declared, because an undeclared location is unknown", async () => {
 		stubWorkspace()
 		const currentSettings = settings()
 		currentSettings.autoApprovalSettings.actions.editFiles = true
 		const autoApprove = new AutoApprove(commandPermissionController({ allowed: true, reason: "no_config" }) as any, currentSettings, false)
 
-		assert.equal(await autoApprove.shouldAutoApproveCategory("edit"), true)
+		assert.equal(await autoApprove.shouldAutoApproveCategory("edit"), false)
 	})
 })

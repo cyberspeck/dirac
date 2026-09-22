@@ -559,6 +559,31 @@ describe("SurfaceAdapter", () => {
 				rawInput: { path: "new.ts", content: "export {}\n" },
 			})
 		})
+
+		// The security-relevant wiring: if the locations spread were ever dropped,
+		// shouldAutoApproveCategory would be asked about an empty path list and an external write
+		// could be approved with a green unit suite.
+		it("hands the declared category and locations to the auto-approver, and prompts when it says no", async () => {
+			const fakeHandle = {
+				id: "card-1",
+				update: sinon.stub().resolves(),
+				appendBody: sinon.stub().resolves(),
+				finalize: sinon.stub().resolves(),
+				waitForInteraction: sinon.stub().resolves({ action: DiracAskResponse.APPROVE }),
+			}
+			config.taskMessenger.createCard = sinon.stub().resolves(attachCardState(fakeHandle))
+
+			await adapter.interaction.askPermission("May I?", {
+				category: "edit",
+				locations: [{ path: "/outside/x.md" }],
+			})
+
+			sinon.assert.calledWithExactly(config.autoApprover.shouldAutoApproveCategory, "edit", ["/outside/x.md"])
+			sinon.assert.calledWithMatch(config.taskMessenger.createCard, {
+				header: "Permission Request",
+				requireApproval: true,
+			})
+		})
 	})
 
 	describe("browser trait", () => {
@@ -869,7 +894,10 @@ function createMockConfig(): any {
 			contextManager: { getNextTruncationRange: sinon.stub() },
 		},
 		autoApprovalSettings: {},
-		autoApprover: { isUnrestrictedAutoApprove: sinon.stub().returns(false) },
+		autoApprover: {
+			isUnrestrictedAutoApprove: sinon.stub().returns(false),
+			shouldAutoApproveCategory: sinon.stub().resolves(false),
+		},
 		browserSettings: {},
 		callbacks: {
 			assertMutationAuthorized: sinon.stub(),

@@ -153,6 +153,10 @@ export class AutoApprove {
 		const actions = this.setting("autoApprovalSettings").actions
 		if (!(category === "read" ? actions.readFiles : actions.editFiles)) return false
 
+		// An undeclared location is unknown, not local. `[].every()` is true, which would have made
+		// a category with no paths auto-approve without any containment check at all.
+		if (paths.length === 0) return false
+
 		const localFlags = await Promise.all(paths.map((candidate) => this.isLocalPath(candidate)))
 		if (localFlags.every(Boolean)) return true
 

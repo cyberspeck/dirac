@@ -1,7 +1,7 @@
 import { AgentConfigLoader } from "@core/task/tools/subagent/AgentConfigLoader"
 import { DEFAULT_SUBAGENT_TIMEOUT_SECONDS } from "@core/task/tools/subagent/SubagentExecutionPolicy"
 import { SUBAGENT_TASK_TITLE_MAX_CHARS, SUBAGENT_TASK_TITLE_MAX_WORDS } from "@shared/subagents"
-import { DiracDefaultTool, type DiracTool } from "@/shared/tools"
+import { DiracDefaultTool, type DiracTool, toolUseNames } from "@/shared/tools"
 import {
 	type DiracToolSpec,
 	shouldUseStrictToolSchemas,
@@ -103,12 +103,47 @@ export class DiracToolSet {
 	}
 
 	public static convertSpecsToNativeTools(specs: DiracToolSpec[], context: SystemPromptContext): DiracTool[] {
-		const enabledTools = specs.filter((tool) => typeof tool.description === "string" && tool.description.trim().length > 0)
+		const enabledTools = DiracToolSet.withoutHiddenToolMentions(
+			specs.filter((tool) => typeof tool.description === "string" && tool.description.trim().length > 0),
+			context,
+		)
 		const providerId = context.providerInfo?.providerId || "openai"
 		const modelId = context.providerInfo?.model?.id
 		const converter = DiracToolSet.getNativeConverter(providerId, modelId)
 
 		return enabledTools.map((tool) => converter(tool, context))
+	}
+
+	/**
+	 * A builtin tool that is disabled must not be named by the ones that are shown: "set
+	 * include_anchors: true ... required by edit_file" with edit_file disabled sends the model
+	 * after coordinates for a tool it cannot call. Drops every sentence of a description that
+	 * names a hidden builtin, and every optional parameter whose instruction does; a required
+	 * parameter keeps its remaining sentences. The system-prompt counterpart is the
+	 * execute_command/list_skills filtering in TaskRequestBuilder.
+	 */
+	public static withoutHiddenToolMentions(specs: DiracToolSpec[], context: SystemPromptContext): DiracToolSpec[] {
+		const shown = new Set(specs.map((spec) => spec.name))
+		const hidden = toolUseNames.filter((name) => !shown.has(name))
+		if (hidden.length === 0) return specs
+		const resolve = (instruction: string | ((c: SystemPromptContext) => string)) =>
+			typeof instruction === "function" ? instruction(context) : instruction
+		const mentions = new RegExp(`\\b(${hidden.join("|")})\\b`)
+		const prune = (text: string) =>
+			text
+				.split(/(?<=[.!?])\s+(?=[A-Z])/)
+				.filter((sentence) => !mentions.test(sentence))
+				.join(" ")
+
+		return specs.map((spec) => {
+			if (!mentions.test(spec.description) && !spec.parameters?.some((p) => mentions.test(resolve(p.instruction)))) {
+				return spec
+			}
+			const parameters = spec.parameters
+				?.filter((p) => p.required || !mentions.test(resolve(p.instruction)))
+				.map((p) => (mentions.test(resolve(p.instruction)) ? { ...p, instruction: prune(resolve(p.instruction)) } : p))
+			return { ...spec, description: prune(spec.description), parameters }
+		})
 	}
 
 	/**

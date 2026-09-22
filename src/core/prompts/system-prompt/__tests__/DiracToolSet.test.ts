@@ -1,4 +1,8 @@
 import { strict as assert } from "node:assert"
+import { edit_file_spec } from "@core/task/tools/modules/edit_file/EditFileTool"
+import { inspect_ast_spec } from "@core/task/tools/modules/inspect_ast/InspectAstTool"
+import { read_file_spec } from "@core/task/tools/modules/read_file/ReadFileTool"
+import { search_files_spec } from "@core/task/tools/modules/search_files"
 import { use_subagents_spec } from "@core/task/tools/modules/use_subagents/UseSubagentsTool"
 import { AgentConfigLoader } from "@core/task/tools/subagent/AgentConfigLoader"
 import { afterEach, describe, it } from "mocha"
@@ -112,5 +116,31 @@ describe("DiracToolSet Utility subagent routing", () => {
 			description: "Run this subagent using the configured Utility model. Default: false.",
 		})
 		assert.deepEqual(anthropicItems.required, ["task_title", "prompt"])
+	})
+})
+
+describe("DiracToolSet hidden-tool mentions", () => {
+	const names = (specs: ReturnType<typeof DiracToolSet.withoutHiddenToolMentions>) =>
+		JSON.stringify(specs.map((spec) => [spec.description, spec.parameters?.map((p) => [p.name, p.instruction])]))
+
+	it("drops sentences and optional parameters that name a disabled builtin", () => {
+		const specs = DiracToolSet.withoutHiddenToolMentions([read_file_spec, search_files_spec], baseContext)
+
+		assert.doesNotMatch(names(specs), /\bedit_file\b|\binspect_ast\b/)
+		for (const spec of specs) {
+			assert.equal(spec.parameters?.some((p) => p.name === "include_anchors"), false, spec.name)
+		}
+		// What remains still describes the tool.
+		assert.match(specs[0].description, /line ranges/)
+		assert.ok(specs[0].parameters?.some((p) => p.name === "start_line"))
+	})
+
+	it("leaves a spec alone when the tools it names are shown", () => {
+		const [read] = DiracToolSet.withoutHiddenToolMentions(
+			[read_file_spec, edit_file_spec, inspect_ast_spec, search_files_spec],
+			baseContext,
+		)
+
+		assert.equal(read, read_file_spec)
 	})
 })

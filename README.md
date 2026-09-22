@@ -1,5 +1,14 @@
 # Dirac, an Open-source AI coding agent for efficiently doing complex work 
 
+> **This is a modified build.** This branch (`local-model-patches`) is a modified version of
+> Dirac (Copyright Dirac Delta Labs), which is itself derived from Cline (Copyright Cline Bot
+> Inc.). Both are licensed under the Apache License 2.0; see `LICENSE`, which carries both
+> copyright notices. Files have been changed relative to upstream Dirac — the changes are
+> listed in `FINDINGS.md` and in the commit history of this branch, and are aimed at driving
+> Dirac with small local models with the shell and browser tools disabled. This build is not
+> produced, endorsed or supported by Dirac Delta Labs or Cline Bot Inc. "Dirac" and "Cline"
+> are the names of their respective projects and are not licensed to this fork (Apache-2.0 §6).
+
 Dirac is built for long-running software-engineering work, precise codebase changes, and efficient model use.
 
 ## What is Dirac?

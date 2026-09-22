@@ -9,7 +9,7 @@
 > their respective projects and are not licensed to this fork (Apache-2.0 §6).
 
 <!-- BUILD-STAMP:START -->
-**Build:** commit “fix(permissions): finalize the permission card, and say what is being replaced” on `local-model-patches`, 2026-09-22.
+**Build:** commit “fix(ui): name the auto-approved tool, preview collapsed reasoning” on `local-model-patches`, 2026-09-22.
 <!-- BUILD-STAMP:END -->
 
 ## What this build is for

@@ -40,6 +40,8 @@ export function buildInteractionTrait(
 				permissionRequestKind: preview?.manualOnly ? "manual_tool" : "tool",
 				collapsed: false,
 				...(preview?.diffs ? { diffs: preview.diffs, renderType: "diff" } : {}),
+				...(preview?.locations ? { locations: preview.locations } : {}),
+				...(preview?.category ? { permissionCategory: preview.category } : {}),
 				...(preview?.rawInput ? { rawInput: preview.rawInput } : {}),
 			})
 			const result = await card.waitForInteraction()
@@ -63,7 +65,7 @@ export async function createCardFromMessenger(
 	params: CardParams,
 	tracker: CardHandle[],
 ): Promise<ICardHandle> {
-	const { permissionRequestKind, ...cardParams } = params
+	const { permissionRequestKind, permissionCategory, ...cardParams } = params
 	if (permissionRequestKind === undefined) {
 		return createDisplayedCardFromMessenger(config, cardParams, tracker)
 	}
@@ -74,6 +76,16 @@ export async function createCardFromMessenger(
 	}
 	if (permissionRequestKind === "manual_tool") {
 		return createDisplayedCardFromMessenger(config, cardParams, tracker, false, isAutoApproved)
+	}
+
+	// A tool outside the DiracDefaultTool enum cannot be classified by shouldAutoApproveTool, so it
+	// declares which checkbox governs it instead. Checked before the Utility model: an explicit
+	// user setting should not be second-guessed by a model.
+	if (permissionCategory) {
+		const paths = (cardParams.locations ?? []).map((location) => location.path)
+		if (await config.autoApprover.shouldAutoApproveCategory(permissionCategory, paths)) {
+			return new ApprovedPermissionCardHandle(cardParams)
+		}
 	}
 
 	const binding = config.permissionDecisionBinding

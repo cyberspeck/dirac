@@ -12,6 +12,13 @@ const WRITE_TOOLS: DiracDefaultTool[] = [DiracDefaultTool.FILE_NEW, DiracDefault
 
 export type ToolPermissionDisposition = "auto_approve" | "utility_eligible" | "manual_only"
 
+/**
+ * What a tool outside the DiracDefaultTool enum declares about itself, so the user's
+ * "read files" / "edit files" checkboxes can govern its permission prompt. A declaration of
+ * intent, never enforcement.
+ */
+export type PermissionCategory = "read" | "edit"
+
 export class AutoApprove {
 	private commandPermissionController: CommandPermissionController
 	// Cache for workspace paths - populated on first access and reused for the task lifetime
@@ -123,25 +130,42 @@ export class AutoApprove {
 		return false
 	}
 
+	/** Is this path inside the workspace? The single copy of a check that was written out three times. */
+	private async isLocalPath(candidate: string): Promise<boolean> {
+		const { isMultiRootScenario } = await this.getWorkspaceInfo()
+		if (isMultiRootScenario) {
+			return await isLocatedInWorkspace(candidate)
+		}
+		const cwd = await getCwd(getDesktopDir())
+		const absolutePath = resolveWorkspacePath(cwd, candidate, "AutoApprove.isLocalPath") as string
+		return isLocatedInPath(cwd, absolutePath)
+	}
+
+	/**
+	 * Auto-approval for a tool that is not in the DiracDefaultTool enum, and which
+	 * `shouldAutoApproveTool` therefore refuses by falling off its switch. The category is the
+	 * tool's own declaration; a custom tool is arbitrary TypeScript in the extension host, so this
+	 * routes the prompt to the right checkbox and claims nothing about what the tool does.
+	 */
+	async shouldAutoApproveCategory(category: PermissionCategory, paths: readonly string[] = []): Promise<boolean> {
+		if (this.setting("yoloModeToggled") || this.setting("autoApproveAllToggled")) return true
+
+		const actions = this.setting("autoApprovalSettings").actions
+		if (!(category === "read" ? actions.readFiles : actions.editFiles)) return false
+
+		const localFlags = await Promise.all(paths.map((candidate) => this.isLocalPath(candidate)))
+		if (localFlags.every(Boolean)) return true
+
+		// A write outside the workspace is never auto-approved for built-ins either (WRITE_TOOLS).
+		if (category === "edit") return false
+		return actions.readFilesExternally ?? false
+	}
+
 	async resolveToolPathPermission(
 		blockname: DiracDefaultTool,
 		autoApproveActionpath: string | undefined,
 	): Promise<ToolPermissionDisposition> {
-		let isLocal = false
-		if (autoApproveActionpath) {
-			const { isMultiRootScenario } = await this.getWorkspaceInfo()
-			if (isMultiRootScenario) {
-				isLocal = await isLocatedInWorkspace(autoApproveActionpath)
-			} else {
-				const cwd = await getCwd(getDesktopDir())
-				const absolutePath = resolveWorkspacePath(
-					cwd,
-					autoApproveActionpath,
-					"AutoApprove.resolveToolPathPermission",
-				) as string
-				isLocal = isLocatedInPath(cwd, absolutePath)
-			}
-		}
+		const isLocal = autoApproveActionpath ? await this.isLocalPath(autoApproveActionpath) : false
 
 		const isWriteOperation = WRITE_TOOLS.includes(blockname)
 		if (!isLocal && isWriteOperation) return "manual_only"
@@ -165,22 +189,7 @@ export class AutoApprove {
 		blockname: DiracDefaultTool,
 		autoApproveActionpath: string | undefined,
 	): Promise<boolean> {
-		let isLocalRead = false
-		if (autoApproveActionpath) {
-			const { isMultiRootScenario } = await this.getWorkspaceInfo()
-
-			if (isMultiRootScenario) {
-				isLocalRead = await isLocatedInWorkspace(autoApproveActionpath)
-			} else {
-				const cwd = await getCwd(getDesktopDir())
-				const absolutePath = resolveWorkspacePath(
-					cwd,
-					autoApproveActionpath,
-					"AutoApprove.shouldAutoApproveToolWithPath",
-				) as string
-				isLocalRead = isLocatedInPath(cwd, absolutePath)
-			}
-		}
+		const isLocalRead = autoApproveActionpath ? await this.isLocalPath(autoApproveActionpath) : false
 
 		if (this.setting("yoloModeToggled")) return true
 		if (this.setting("autoApproveAllToggled")) return true

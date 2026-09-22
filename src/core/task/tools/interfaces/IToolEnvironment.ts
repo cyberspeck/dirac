@@ -102,6 +102,8 @@ export interface CardParams extends SharedCardParams {
 	permissionRequestKind?: "tool" | "manual_tool"
 	/** Internal live predicate used to resolve a displayed tool permission after settings change. */
 	isAutoApproved?: () => boolean
+	/** Set from PermissionPreview.category; consumed by createCardFromMessenger, never rendered. */
+	permissionCategory?: import("../autoApprove").PermissionCategory
 }
 
 export interface IUITrait {
@@ -155,6 +157,10 @@ export interface IInteractionTrait {
 export interface PermissionPreview {
 	utilityEligible?: boolean
 	manualOnly?: boolean
+	/** Which auto-approve checkbox governs this prompt. A declaration of intent, not enforcement. */
+	category?: import("../autoApprove").PermissionCategory
+	/** Absolute paths this call touches, so the in-workspace check can run. */
+	locations?: import("../../../../shared/ExtensionMessage").CardLocation[]
 	diffs?: import("../../../../shared/ExtensionMessage").CardDiff[]
 	rawInput?: import("../../../../shared/ExtensionMessage").CardRawInput
 }

@@ -93,3 +93,49 @@ describe("AutoApprove.resolveToolPathPermission", () => {
 		sinon.assert.notCalled(permissions.validateTool)
 	})
 })
+
+describe("AutoApprove.shouldAutoApproveCategory", () => {
+	afterEach(() => sinon.restore())
+
+	it("governs a declared edit with the editFiles checkbox", async () => {
+		stubWorkspace()
+		const currentSettings = settings()
+		currentSettings.autoApprovalSettings.actions.editFiles = false
+		currentSettings.autoApprovalSettings.actions.readFiles = true
+		const autoApprove = new AutoApprove(commandPermissionController({ allowed: true, reason: "no_config" }) as any, currentSettings, false)
+
+		assert.equal(await autoApprove.shouldAutoApproveCategory("edit", ["src/index.ts"]), false)
+		assert.equal(await autoApprove.shouldAutoApproveCategory("read", ["src/index.ts"]), true)
+	})
+
+	it("never auto-approves an edit outside the workspace, as WRITE_TOOLS already does not", async () => {
+		stubWorkspace()
+		const currentSettings = settings()
+		currentSettings.autoApprovalSettings.actions.editFiles = true
+		currentSettings.autoApprovalSettings.actions.editFilesExternally = true
+		const autoApprove = new AutoApprove(commandPermissionController({ allowed: true, reason: "no_config" }) as any, currentSettings, false)
+
+		assert.equal(await autoApprove.shouldAutoApproveCategory("edit", ["/outside/file.md"]), false)
+	})
+
+	it("requires readFilesExternally for a read outside the workspace", async () => {
+		stubWorkspace()
+		const currentSettings = settings()
+		currentSettings.autoApprovalSettings.actions.readFiles = true
+		currentSettings.autoApprovalSettings.actions.readFilesExternally = false
+		const autoApprove = new AutoApprove(commandPermissionController({ allowed: true, reason: "no_config" }) as any, currentSettings, false)
+
+		assert.equal(await autoApprove.shouldAutoApproveCategory("read", ["/outside/file.md"]), false)
+		currentSettings.autoApprovalSettings.actions.readFilesExternally = true
+		assert.equal(await autoApprove.shouldAutoApproveCategory("read", ["/outside/file.md"]), true)
+	})
+
+	it("approves when the category is on and no path was declared", async () => {
+		stubWorkspace()
+		const currentSettings = settings()
+		currentSettings.autoApprovalSettings.actions.editFiles = true
+		const autoApprove = new AutoApprove(commandPermissionController({ allowed: true, reason: "no_config" }) as any, currentSettings, false)
+
+		assert.equal(await autoApprove.shouldAutoApproveCategory("edit"), true)
+	})
+})

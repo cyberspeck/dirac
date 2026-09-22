@@ -9,7 +9,7 @@
 > their respective projects and are not licensed to this fork (Apache-2.0 §6).
 
 <!-- BUILD-STAMP:START -->
-**Build:** commit “docs: record the diagnostics miss, the custom-tool permission gap, T-003, T-011” on `local-model-patches`, 2026-09-22 — **built from a dirty working tree**, so the commit does not describe it exactly.
+**Build:** commit “docs: record that the unit suite stops early (F-014)” on `local-model-patches`, 2026-09-22.
 <!-- BUILD-STAMP:END -->
 
 ## What this build is for

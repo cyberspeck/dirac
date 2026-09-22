@@ -15,6 +15,7 @@ Conventions:
 
 | ID | Sev | Area | Symptom | Evidence | Upstream |
 |----|-----|------|---------|----------|----------|
+| F-016 | med | ui | A card's `diffs` are **never rendered**. `DiffDecorator.tsx:10` matches `renderType: "diff"` but only draws an "open file" button; nothing in `webview-ui/src` reads `card.diffs` for display. Builtin edit tools show their diff through the VS Code diff editor (`env.editor.showReview`, `WriteToFileTool.ts:191`), not in the chat, so a card that carries diffs and nothing else shows the user nothing | `webview-ui/src/features/modular-ui/decorators/DiffDecorator.tsx:14` — sole consumer | no |
 | F-004 | ? | editor | CRLF handling in diff/apply never traced — literal `\n` comparisons may misbehave on Windows | unexamined, not cleared | no |
 | F-005 | low | permissions | `picomatch(rule.pattern, { dot: true })` without `windows: true`; backslash paths may not match globs like `src/*.ts` | `src/core/permissions/PermissionRuleEvaluator.ts:19` | no |
 | F-006 | low | ignore | `controlPaths` set uses `path.normalize` without case folding, unlike `arePathsEqual` elsewhere | `src/shared/ignore/DiracIgnorePolicy.ts:158,183,198` | no |
@@ -30,6 +31,7 @@ Conventions:
 
 | ID | Sev | Area | Symptom | Fix | Upstream |
 |----|-----|------|---------|-----|----------|
+| F-015 | high | permissions | Every custom tool whose permission request was answered **by hand** failed with `Tool 'x' left nonterminal card(s): <id> (waiting_for_input)` — the write itself succeeded, so the model was told its edit failed when it had not. `buildInteractionTrait.askPermission` created the card and waited on it but never finalized it, and `ToolExecutorCoordinator.ts:211` asserts every created card is terminal. Invisible whenever the category auto-approved (that path returns an already-final `ApprovedPermissionCardHandle`), which is why the permission-category work shipped with it | finalized in the trait, not per tool (`UiTraitBuilder.ts:47-60`), 3 tests in `SurfaceAdapter.test.ts` | no |
 | F-001 | high | prompt-artifacts | no artifacts written on Windows; directory created but left empty. Containment guard compared a realpath'd artifact dir against a merely `path.resolve`'d cwd with case-sensitive `startsWith`. Also broke under a symlinked `/tmp` on macOS | commit “fix(prompt-artifacts): compare cwd and artifact dir in the same resolved form” | no |
 | F-002 | med | paths | `format()` treated in-workspace files as external. `!path.startsWith(cwd)` had no separator guard, so `/a/proj-evil` passed a `/a/proj` check, and it missed Windows drive-letter case | commit “fix(paths): use isLocatedInPath for workspace containment in format()” | no |
 | F-012 | low | checkpoints | "Failed to add at least one file(s) to checkpoints shadow git" discarded the underlying error in three bare catch blocks, leaving an unactionable message. `CheckpointAddResult` now carries git's message and `describeAddFailure` states the consequence and a next step | (this session) | no |

@@ -2,16 +2,16 @@ export const spec = {
     id: "count_text",
     name: "count_text",
     description:
-        "Zählt Zeichen (mit und ohne Leerzeichen), Wörter und Zeilen in einer oder mehreren Dateien. " +
-        "Zählt den Rohtext der Datei, einschließlich Markdown-Syntax, Überschriften und Literaturverzeichnis. " +
-        "Bei mehreren Dateien wird zusätzlich eine Summe ausgegeben.",
+        "Counts characters (with and without spaces), words and lines in one or more files. " +
+        "Counts the raw file text, including Markdown syntax, headings and the bibliography. " +
+        "With several files it also reports a total.",
     parameters: [
         {
             name: "paths",
-            type: "string",
+            type: "array",
+            items: { type: "string" },
             required: true,
-            instruction:
-                "Ein Dateipfad oder mehrere, getrennt durch Komma oder Zeilenumbruch. Relativ zum Arbeitsverzeichnis.",
+            instruction: "One or more file paths, relative to the working directory.",
         },
     ],
 }
@@ -43,15 +43,22 @@ export function countText(raw: string): Counts {
     }
 }
 
-export function parsePaths(value: string): string[] {
-    return value
+/**
+ * The spec declares an array, which is what the built-in file tools use and what the model
+ * should send. The comma/newline split stays as a fallback: a small model that sends a bare
+ * string, or an array that some upstream has flattened to "a.md,b.md", still works. A path
+ * containing a comma is the price, and it is not a real one in this workspace.
+ */
+export function parsePaths(value: unknown): string[] {
+    const raw = Array.isArray(value) ? value.join("\n") : String(value ?? "")
+    return raw
         .split(/[,\n]/u)
         .map((p) => p.trim())
         .filter(Boolean)
 }
 
 function formatRow(label: string, c: Counts): string {
-    return `${label}: ${c.words} Wörter, ${c.charsWithSpaces} Zeichen (mit Leerzeichen), ${c.charsWithoutSpaces} Zeichen (ohne Leerzeichen), ${c.lines} Zeilen`
+    return `${label}: ${c.words} words, ${c.charsWithSpaces} characters (with spaces), ${c.charsWithoutSpaces} characters (without spaces), ${c.lines} lines`
 }
 
 export function create() {
@@ -63,9 +70,9 @@ export function create() {
             return ["all"]
         },
         async processCall(args: any, env: any): Promise<string> {
-            const paths = parsePaths(String(args?.paths ?? ""))
+            const paths = parsePaths(args?.paths)
             if (paths.length === 0) {
-                return "Fehler: paths fehlt."
+                return "Error: paths is missing."
             }
 
             const lines: string[] = []
@@ -77,15 +84,15 @@ export function create() {
 
                 const info = await env.workspace.getFileInfo(absolutePath)
                 if (!info?.exists) {
-                    lines.push(`${displayPath}: Datei nicht gefunden.`)
+                    lines.push(`${displayPath}: file not found.`)
                     continue
                 }
                 if (!info.isFile) {
-                    lines.push(`${displayPath}: kein reguläre Datei (Verzeichnis?).`)
+                    lines.push(`${displayPath}: not a regular file (a directory?).`)
                     continue
                 }
                 if (typeof info.size === "number" && info.size > MAX_BYTES) {
-                    lines.push(`${displayPath}: übersprungen, Datei ist grösser als ${MAX_BYTES} Bytes.`)
+                    lines.push(`${displayPath}: skipped, the file is larger than ${MAX_BYTES} bytes.`)
                     continue
                 }
 
@@ -101,7 +108,7 @@ export function create() {
             }
 
             if (counted > 1) {
-                lines.push(formatRow(`Summe (${counted} Dateien)`, total))
+                lines.push(formatRow(`Total (${counted} files)`, total))
             }
             return lines.join("\n")
         },

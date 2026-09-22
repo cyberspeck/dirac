@@ -60,7 +60,7 @@ function fakeEnv(files) {
 {
     const tool = create()
     const out = await tool.processCall({ paths: "a.md" }, fakeEnv({ "a.md": "eins zwei drei" }))
-    assert.match(out, /a\.md: 3 Wörter/)
+    assert.match(out, /a\.md: 3 words/)
     assert.ok(!out.includes("Summe"), "single file must not emit a total row")
 }
 
@@ -71,14 +71,14 @@ function fakeEnv(files) {
         { paths: "a.md, fehlt.md, b.md" },
         fakeEnv({ "a.md": "eins zwei", "b.md": "drei" }),
     )
-    assert.match(out, /fehlt\.md: Datei nicht gefunden/)
-    assert.match(out, /Summe \(2 Dateien\): 3 Wörter/)
+    assert.match(out, /fehlt\.md: file not found/)
+    assert.match(out, /Total \(2 files\): 3 words/)
 }
 
 // Missing argument is an error, not a crash.
 {
     const tool = create()
-    assert.match(await tool.processCall({}, fakeEnv({})), /^Fehler/)
+    assert.match(await tool.processCall({}, fakeEnv({})), /^Error/)
 }
 
 console.log("count_text smoke: all assertions passed")

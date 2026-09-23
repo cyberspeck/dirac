@@ -55,6 +55,7 @@ knip.json
 .dirac-cache
 .dirac-symbol-index
 .vscode-test.mjs
+tools/**
 dirac-*.vsix
 
 # Ignore all webview-ui files except the build directory

@@ -31,6 +31,10 @@ changing.
 
 - **Reads and navigates without loading everything.** `read_file` takes a line range, so a long
   manuscript is navigable for a few hundred tokens once its outline is known.
+- **Edits surgically.** A custom tool's edit is shown as a full diff before writing, and approved
+  like a builtin's. `edit_file` and `write_to_file` remain for whole-block work. The outline, search
+  and pattern-replace tools this build is used with are custom workspace tools maintained outside
+  this repository; `tools/count_text/` is kept here.
 - **Counts words**, because a word-count requirement is a real requirement.
 - **Commits your work for you.** Every completed task is auto-committed to git, so an edit you did
   not want is always one `git revert` away. This is what makes it safe to let it write at all.
@@ -65,7 +69,6 @@ You also need [Ollama](https://ollama.com) with a model pulled, and the extensio
 | Upstream Dirac | <https://github.com/dirac-run/dirac> |
 | Cline, which Dirac forked | <https://github.com/cline/cline> |
 | Known defects in this build | [`FINDINGS.md`](FINDINGS.md) |
-| Tool backlog and the reasoning behind the tool set | [`tools/BACKLOG.md`](tools/BACKLOG.md) |
 | Fork conventions, build and patch rules | [`AGENTS.md`](AGENTS.md) |
 
 ## Development

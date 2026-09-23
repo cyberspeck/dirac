@@ -25,7 +25,7 @@ Windows is a first-class target. It is where most of the defects found so far on
 - **No private content** — no user names, manuscript topics or paths of a downstream deployment in
   any tracked file. `CLAUDE.local.md` (untracked) carries that context where a session needs it.
 - **Tests:** `scripts/run-unit.sh` for a full run, compared against `test-baselines/` (see the
-  README there). Manual click-tests use the invented corpus in `test-workspace/`.
+  README there).
 
 ## Licence obligations — do not break these
 
@@ -66,8 +66,8 @@ Found a problem after publishing? Edit the notes to record it, and fix it in the
 
 Adding, removing or reshaping a model-facing tool — including how it is approved — requires an
 independent subagent review **before and after** the change. Protocol, brief contents and report
-requirements: `tools/REVIEW-PROTOCOL.md`. The candidate list and the rulings it produces live in
-`tools/BACKLOG.md`.
+requirements, the candidate list and the rulings it produces are kept with the custom tools,
+which are maintained outside this repository. `tools/count_text/` is the one tool kept here.
 
 ## Findings ledger
 

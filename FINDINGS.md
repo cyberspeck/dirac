@@ -53,9 +53,8 @@ Conventions:
 
 ## Wanted, not broken
 
-Candidate tools and the research behind them live in `tools/BACKLOG.md` — user stories ranked
-for both the writing and coding use cases, the citation-encoding recommendation, and a survey
-of what existing VS Code writing extensions already do.
+Candidate tools and the research behind them are kept with the custom tools, which are
+maintained outside this repository.
 
 ## Running the tests
 

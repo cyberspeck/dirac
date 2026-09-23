@@ -53,6 +53,15 @@ describe("getEditingFilesInstructions", () => {
 		section.should.containEql("edit_file")
 	})
 
+	it("names only the available anchor sources", () => {
+		const section = getEditingFilesInstructions({ readFileEnabled: false, inspectAstEnabled: false })
+		section.should.not.match(/\bread_file\b/)
+		section.should.match(/coordinates from `search_files`\./)
+		getEditingFilesInstructions({ readFileEnabled: false, searchFilesEnabled: false, inspectAstEnabled: false }).should.match(
+			/`ANCHOR.CONTENT` coordinates\. Copy/,
+		)
+	})
+
 	it("is empty, heading included, when no editing tool is available", () => {
 		getEditingFilesInstructions({
 			executeCommandEnabled: true,

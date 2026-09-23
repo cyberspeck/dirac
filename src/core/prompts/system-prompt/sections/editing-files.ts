@@ -13,6 +13,8 @@ export const getEditingFilesInstructions = (
 		editAstEnabled?: boolean
 		inspectAstEnabled?: boolean
 		writeToFileEnabled?: boolean
+		readFileEnabled?: boolean
+		searchFilesEnabled?: boolean
 	} = {},
 ) => {
 	const executeCommandEnabled = opts.executeCommandEnabled ?? true
@@ -38,12 +40,14 @@ ${toolsLine}
 `
 	}
 
-	const anchorSources = ["`read_file`", "`search_files`"]
+	const anchorSources: string[] = []
+	if (opts.readFileEnabled ?? true) anchorSources.push("`read_file`")
+	if (opts.searchFilesEnabled ?? true) anchorSources.push("`search_files`")
 	if (inspectAstEnabled) anchorSources.push("`inspect_ast` with `include_anchors: true`")
 
 	return `## EDITING FILES
 
 ${toolsLine}
-- \`edit_file\` requires current complete \`ANCHOR${delimiter}CONTENT\` coordinates from ${joinOr(anchorSources)}. Copy them verbatim, use the smallest range, keep anchors out of replacement text, reread after an anchor failure, and batch only non-overlapping edits.
+- \`edit_file\` requires current complete \`ANCHOR${delimiter}CONTENT\` coordinates${anchorSources.length > 0 ? ` from ${joinOr(anchorSources)}` : ""}. Copy them verbatim, use the smallest range, keep anchors out of replacement text, reread after an anchor failure, and batch only non-overlapping edits.
 `
 }

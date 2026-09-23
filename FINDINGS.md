@@ -27,12 +27,12 @@ Conventions:
 | F-011 | n/a | tools | `count_text` counts raw file text; a Markdown-rendered mode (excluding frontmatter, syntax, bibliography) would match what a word-count requirement actually measures | requested by maintainer 2026-09-22 | n/a |
 | F-013 | med | diagnostics | `diagnostics_scan` reports `No diagnostics issues found.` for a file whose LTeX+ warnings are visible in the Problems panel. Severity is not the cause (warnings are accepted at both filter sites). Candidates: the 2 s poll window vs a cold language server, and `convertToFileDiagnostics` rewriting `filePath` relative to the workspace folder while the formatter matches cwd-relative `displayPath`. Worse than the miss: an unfinished scan is indistinguishable from a clean file | `diagnostics_scan/index.ts:95,184`, `DiagnosticFormatter.ts:37`, `hostbridge/workspace/getDiagnostics.ts:33` | no |
 | F-010 | low | tooling | `npm run test:unit` fails on Node 26 — mocha's bundled yargs uses `require` in ESM scope. Use an LTS node (22.x verified) | pre-existing, unrelated to our patches | no |
-| F-014 | med | tooling | `npm run test:unit` **stops early**: a failing `afterEach` ("initTask creates a Task on controller.task") aborts the run at 925 passing / 2 failing in ~1 s. The 2438 / 3 / 80 baseline recorded on 2026-09-21 does not reproduce, so any comparison against it is meaningless — and a real regression in the untouched ~1500 tests would be invisible. Measured identical (925/2) at commit “fix(task): give each prompt-debug artifact its own file” and at HEAD on 2026-09-22 | run under Node 22.23.2 | no |
 
 ## Fixed
 
 | ID | Sev | Area | Symptom | Fix | Upstream |
 |----|-----|------|---------|-----|----------|
+| F-014 | med | tooling | `npm run test:unit` stopped at 925 passing / 2 failing. **Not a suite defect**: inside the macOS agent sandbox `fs.watch` fails with EMFILE, the logger guard turns that into an `afterEach` failure, and mocha aborts. Outside the sandbox the full run completes (2026-09-23, commit “fix(respond): complete in Plan Mode is presented as the plan (T-012)” and later: 2461 passing / 3 pending / 78 failing, vs 79 failing at the pin) | run the suite unsandboxed; no code change | n/a |
 | F-020 | med | prompt | Tool definitions name disabled builtins: with `edit_file` off, `read_file` and `search_files` still offer `include_anchors` "required by edit_file" and `read_file` says "Prefer inspect_ast". A local model set `include_anchors` six times in one task hoping for line numbers, and got edit coordinates instead | `DiracToolSet.withoutHiddenToolMentions`, applied in `convertSpecsToNativeTools` (main and subagent paths): drops each description sentence and optional parameter naming a hidden builtin. 2 tests in `DiracToolSet.test.ts` | no |
 | F-016 | med | ui | A card's `diffs` are never rendered in the chat (`DiffDecorator.tsx` draws only an "open file" button), so a custom tool's edit was approved from its find/replace text alone | not in the webview: `askPermission` opens the VS Code diff editor from `preview.diffs` while a human decides and closes it after, as the builtins do (`UiTraitBuilder.ts`); never for an auto-approved card. 2 tests in `SurfaceAdapter.test.ts` | no |
 | F-015 | high | permissions | Every custom tool whose permission request was answered **by hand** failed with `Tool 'x' left nonterminal card(s): <id> (waiting_for_input)` — the write itself succeeded, so the model was told its edit failed when it had not. `buildInteractionTrait.askPermission` created the card and waited on it but never finalized it, and `ToolExecutorCoordinator.ts:211` asserts every created card is terminal. Invisible whenever the category auto-approved (that path returns an already-final `ApprovedPermissionCardHandle`), which is why the permission-category work shipped with it | finalized in the trait, not per tool (`UiTraitBuilder.ts:47-60`), 3 tests in `SurfaceAdapter.test.ts` | no |
@@ -57,7 +57,7 @@ of what existing VS Code writing extensions already do.
 
 ## Running the tests
 
-Node 26 does not work (F-010). With an LTS node:
+Node 26 does not work (F-010). With an LTS node, and **outside any sandbox** (F-014):
 
 ```sh
 TS_NODE_PROJECT=./tsconfig.unit-test.json ./node_modules/.bin/mocha \

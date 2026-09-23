@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert"
+import { edit_ast_spec } from "@core/task/tools/modules/edit_ast/EditAstTool"
 import { edit_file_spec } from "@core/task/tools/modules/edit_file/EditFileTool"
 import { inspect_ast_spec } from "@core/task/tools/modules/inspect_ast/InspectAstTool"
 import { read_file_spec } from "@core/task/tools/modules/read_file/ReadFileTool"
@@ -133,6 +134,20 @@ describe("DiracToolSet hidden-tool mentions", () => {
 		// What remains still describes the tool.
 		assert.match(specs[0].description, /line ranges/)
 		assert.ok(specs[0].parameters?.some((p) => p.name === "start_line"))
+	})
+
+	it("drops the AST-preference sentence from search_files when inspect_ast and edit_ast are hidden", () => {
+		const shown = DiracToolSet.withoutHiddenToolMentions(
+			[read_file_spec, search_files_spec, inspect_ast_spec, edit_ast_spec],
+			baseContext,
+		)
+		const shownSearch = shown.find((spec) => spec.name === "search_files")!
+		assert.match(shownSearch.description, /\binspect_ast\b/)
+
+		const hidden = DiracToolSet.withoutHiddenToolMentions([read_file_spec, search_files_spec], baseContext)
+		const hiddenSearch = hidden.find((spec) => spec.name === "search_files")!
+		assert.doesNotMatch(hiddenSearch.description, /\binspect_ast\b|\bedit_ast\b/)
+		assert.match(hiddenSearch.description, /Regex search across files/)
 	})
 
 	it("leaves a spec alone when the tools it names are shown", () => {

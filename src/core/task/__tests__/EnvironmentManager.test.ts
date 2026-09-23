@@ -2,10 +2,11 @@ import assert from "node:assert/strict"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { describe, it } from "mocha"
+import { afterEach, describe, it } from "mocha"
 import * as sinon from "sinon"
 import { EnvironmentManager } from "../EnvironmentManager"
 import { TaskState } from "../TaskState"
+import { ToolRegistry } from "../tools/registry/ToolRegistry"
 
 function createEnvironmentManager(
 	taskState: TaskState,
@@ -30,6 +31,8 @@ function createEnvironmentManager(
 }
 
 describe("EnvironmentManager mode-entry guidance", () => {
+	afterEach(() => sinon.restore())
+
 	it("emits Plan guidance only for a pending Plan entry", async () => {
 		const taskState = new TaskState()
 		taskState.pendingModeNotice = { mode: "plan" }
@@ -46,6 +49,8 @@ describe("EnvironmentManager mode-entry guidance", () => {
 	})
 
 	it("emits concise editing guidance only for a pending Act entry", async () => {
+		sinon.stub(ToolRegistry, "getInstance").returns({ isEnabled: () => true } as unknown as ToolRegistry)
+
 		const taskState = new TaskState()
 		taskState.pendingModeNotice = { mode: "act" }
 		const manager = createEnvironmentManager(taskState)
@@ -60,6 +65,21 @@ describe("EnvironmentManager mode-entry guidance", () => {
 
 		taskState.pendingModeNotice = undefined
 		assert.equal(await manager.getEnvironmentDetails(false), "")
+	})
+
+	it("omits edit_ast from the Act-mode guidance when the tool is disabled", async () => {
+		const isEnabled = sinon.stub().returns(true)
+		isEnabled.withArgs("edit_ast").returns(false)
+		sinon.stub(ToolRegistry, "getInstance").returns({ isEnabled } as unknown as ToolRegistry)
+
+		const taskState = new TaskState()
+		taskState.pendingModeNotice = { mode: "act" }
+		const manager = createEnvironmentManager(taskState)
+
+		const entryDetails = await manager.getEnvironmentDetails(false)
+		assert.match(entryDetails, /## EDITING FILES/)
+		assert.doesNotMatch(entryDetails, /\bedit_ast\b/)
+		assert.match(entryDetails, /\bedit_file\b/)
 	})
 
 	it("uses the request-bound mode and does not claim a newer mismatched notice", async () => {

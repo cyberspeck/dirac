@@ -163,7 +163,12 @@ export class EnvironmentManager {
 			if (mode === "plan") {
 				details += `\nPLAN MODE\n${formatResponse.planModeInstructions()}`
 			} else {
-				details += `\nACT MODE\n${getEditingFilesInstructions({ executeCommandEnabled: ToolRegistry.getInstance().isEnabled("execute_command") })}`
+				details += `\nACT MODE\n${getEditingFilesInstructions({
+					executeCommandEnabled: ToolRegistry.getInstance().isEnabled("execute_command"),
+					editFileEnabled: ToolRegistry.getInstance().isEnabled("edit_file"),
+					editAstEnabled: ToolRegistry.getInstance().isEnabled("edit_ast"),
+					inspectAstEnabled: ToolRegistry.getInstance().isEnabled("inspect_ast"),
+				})}`
 			}
 		}
 

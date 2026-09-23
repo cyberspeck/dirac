@@ -71,11 +71,14 @@ describe("response arguments validator", () => {
 
 	it("enforces main-agent modes but leaves subagent scope policy to the registry", () => {
 		assert.throws(() => validateResponseArguments({ operation: ResponseOperation.PLAN, text: "Plan" }, environment("act")))
-		assert.throws(() =>
-			validateResponseArguments({ operation: ResponseOperation.COMPLETE, text: "Done" }, environment("plan")),
-		)
-		assert.doesNotThrow(() =>
-			validateResponseArguments({ operation: ResponseOperation.COMPLETE, text: "Done" }, environment("plan", true)),
+		// T-012: a final answer sent as `complete` in Plan Mode is presented as the plan, not rejected.
+		assert.deepEqual(validateResponseArguments({ operation: ResponseOperation.COMPLETE, text: "Done" }, environment("plan")), {
+			operation: ResponseOperation.PLAN,
+			text: "Done",
+		})
+		assert.equal(
+			validateResponseArguments({ operation: ResponseOperation.COMPLETE, text: "Done" }, environment("plan", true)).operation,
+			ResponseOperation.COMPLETE,
 		)
 	})
 })

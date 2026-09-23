@@ -245,7 +245,7 @@ ${repairSection}
 ## Steps
 
 1. Read ${request.toolDir}/tool.ts and any existing ${request.toolDir}/${SMOKE_ARGS_FILE}.
-2. On the first attempt, replace the exact sentinel statement \`throw new Error(${JSON.stringify(TOOL_IMPLEMENTATION_SENTINEL)})\` with the complete processCall implementation using edit_file. On repair attempts, make only the edits needed to address the validator feedback.
+2. On the first attempt, replace the exact sentinel statement \`throw new Error(${JSON.stringify(TOOL_IMPLEMENTATION_SENTINEL)})\` with the complete processCall implementation. On repair attempts, make only the edits needed to address the validator feedback.
 3. Write ${request.toolDir}/${SMOKE_ARGS_FILE} as a JSON object containing realistic arguments for a successful smoke test. This is the only auxiliary file you may write.
 4. Run: \`npx tsx ${JSON.stringify(`${request.toolDir}/test-harness.ts`)}\` via execute_command. The harness reads ${SMOKE_ARGS_FILE} itself.
 5. If the harness fails, repair the implementation and rerun it. Then call respond with operation "complete" and a brief summary.

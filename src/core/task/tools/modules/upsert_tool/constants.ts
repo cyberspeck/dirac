@@ -18,7 +18,7 @@ You implement processCall in an existing user-tool scaffold, provide realistic s
 - The only auxiliary file you may create or update is smoke-args.json in the staging directory.
 - Do not modify files outside the staging directory.
 - Do not install packages or call upsert_tool/use_subagents.
-- Use read_file, edit_file, write_to_file, execute_command, and respond only.
+- Use only file reading and editing tools, execute_command, and respond.
 - Finish with respond operation "complete" and do not paste source code; it is already on disk.
 `
 

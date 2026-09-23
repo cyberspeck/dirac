@@ -41,6 +41,14 @@ changing.
 - **Extends itself.** `/new-tool <description>` compiles, validates and smoke-tests a new workspace
   tool; enable it in the **Tools** tab. Tools are plain TypeScript in `.dirac/tools/`.
 
+## Why `tools/count_text` ships here
+
+A language model cannot count words — it estimates, confidently, and where a text has a word limit that
+estimate is a wrong answer that looks right. `count_text` turns counting into a deterministic tool call:
+characters and words per file or per heading section, with comment lines left out. It is also a small,
+complete example of a workspace tool. Install it like any workspace
+tool (see [its README](tools/count_text/README.md)).
+
 ## What it is not
 
 Not a hosted coding agent, and the upstream claims about API cost savings do not apply — there is no

@@ -9,7 +9,7 @@
 > their respective projects and are not licensed to this fork (Apache-2.0 §6).
 
 <!-- BUILD-STAMP:START -->
-**Build:** `5ac252bc` on `v0515-public`, 2026-09-23.
+**Build:** `f21b012b` on `v0515-public`, 2026-09-23.
 <!-- BUILD-STAMP:END -->
 
 ## What this build is for

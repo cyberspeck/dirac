@@ -87,6 +87,8 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 
 	let hookMessageId: string | undefined
 	const abortController = new AbortController()
+	// What the script printed for the user: every output line except blank ones and the JSON response.
+	const shown: string[] = []
 
 	// Declare hookInfo with empty default - populated inside try block.
 	// If getHookInfo throws, error handlers will use the empty default.
@@ -107,7 +109,7 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 		const cardHandle = await messenger.createCard({
 			header: `${hookName} Hook`,
 			status: CardStatus.RUNNING,
-			body: JSON.stringify(hookMetadata),
+			body: hookCardText(hookMetadata, shown),
 		})
 		hookMessageId = cardHandle.id
 
@@ -127,24 +129,16 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 			})
 		}
 
-		// Create streaming callback
+		// Output goes into the hook's card, not into the chat as loose "[workspace stdout <path>]" lines.
+		// The JSON response and blank lines are protocol; anything else the script prints is its message
+		// to the user. The source prefix is kept only when several scripts run for one hook.
 		const streamCallback = async (line: string, stream: "stdout" | "stderr", meta?: HookOutputStreamMeta) => {
-			// Preserve script identity for multi-hook (global + workspace) scenarios.
-			// Without this, concurrent hooks interleave output and it's hard to tell which
-			// script produced which line (and can look like only one hook is printing).
-			//
-			// NOTE: We keep backward compatibility by encoding metadata into the string.
-			// The CLI prints this as-is in verbose mode.
-			const prefixParts: string[] = []
-			if (meta?.source) prefixParts.push(meta.source)
-			prefixParts.push(stream)
-			// Use a shortened path for readability; full path is still available in hook_status.
-			if (meta?.scriptPath) {
-				const parts = meta.scriptPath.split(/[/\\]/).filter(Boolean)
-				prefixParts.push(parts.slice(-3).join("/"))
+			if (!line.trim() || isHookResponseLine(line)) return
+			const source = hookInfo.scriptPaths.length > 1 && meta?.source ? `[${meta.source}] ` : ""
+			shown.push(`${source}${stream === "stderr" ? "stderr: " : ""}${line}`)
+			if (hookMessageId !== undefined) {
+				await updateHookMessage(messageStateHandler, hookMessageId, { ...hookMetadata }, shown)
 			}
-			const prefix = prefixParts.length ? `[${prefixParts.join(" ")}] ` : ""
-			await messenger.upsertText(prefix + line)
 		}
 
 		// Create and execute hook
@@ -175,7 +169,7 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 					exitCode: 130,
 					hasJsonResponse: true,
 					scriptPaths: hookInfo.scriptPaths,
-				})
+				}, shown)
 			}
 
 			return fromHookOutput(result)
@@ -195,7 +189,7 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 				exitCode: 0,
 				hasJsonResponse: true,
 				scriptPaths: hookInfo.scriptPaths,
-			})
+			}, shown)
 		}
 
 		// NoOp hooks return proto defaults; preserve the minimal legacy return shape. Checked only
@@ -220,7 +214,7 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 					status: "cancelled",
 					exitCode: 130,
 					scriptPaths: hookInfo.scriptPaths,
-				})
+				}, shown)
 			}
 
 			return {
@@ -248,7 +242,7 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 						scriptPath: errorInfo.scriptPath,
 					},
 				}),
-			})
+			}, shown)
 		}
 
 		// Log error for non-cancellable hooks or unexpected errors
@@ -264,6 +258,35 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 	}
 }
 
+/** True for the line that carries the hook's JSON response ({ cancel, contextModification, errorMessage }). */
+function isHookResponseLine(line: string): boolean {
+	try {
+		const parsed = JSON.parse(line)
+		return !!parsed && typeof parsed === "object" && !Array.isArray(parsed) && "cancel" in parsed
+	} catch {
+		return false
+	}
+}
+
+/**
+ * The card shows what the script printed; with no output, a plain status. It used to show the raw
+ * metadata (hook name, status, script paths as JSON), which reads as a crash dump to a non-developer.
+ */
+export function hookCardText(metadata: Record<string, any>, shown: string[]): string {
+	const error = metadata.status === "failed" ? (metadata.error?.message ?? `Failed (exit ${metadata.exitCode ?? 1}).`) : undefined
+	if (shown.length > 0) return error ? `${shown.join("\n")}\n${error}` : shown.join("\n")
+	switch (metadata.status) {
+		case "completed":
+			return "Done."
+		case "cancelled":
+			return "Cancelled."
+		case "failed":
+			return error as string
+		default:
+			return "Running…"
+	}
+}
+
 /**
  * Helper to update hook message status in message state
  */
@@ -271,12 +294,13 @@ async function updateHookMessage(
 	messageStateHandler: MessageStateHandler,
 	hookMessageId: string,
 	metadata: Record<string, any>,
+	shown: string[],
 ): Promise<void> {
 	const index = messageStateHandler.findMessageIndexById(hookMessageId)
 	if (index !== -1) {
 		const msg = messageStateHandler.getDiracMessages()[index]
 		if (msg.content.type === DiracMessageType.CARD) {
-			msg.content.card.body = JSON.stringify(metadata)
+			msg.content.card.body = hookCardText(metadata, shown)
 			msg.content.card.status =
 				metadata.status === "completed"
 					? CardStatus.SUCCESS

@@ -302,6 +302,19 @@ export async function formatResults(
 		output += filePathHeader
 		byteSize += Buffer.byteLength(filePathHeader, "utf8")
 
+		if (includeAnchors && matchCount <= 5) {
+			const matches = fileResult.lines.filter((line) => line.isMatch)
+			const matchLines = matches.map((line) => currentLines![line.lineNum - 1])
+			if (matches.length > 0 && matchLines.every((line) => line.length <= MAX_LINE_LENGTH)) {
+				const summary = `Matches: ${matches.map((line, index) => `${line.lineNum} ${JSON.stringify(matchLines[index])}`).join(", ")}\n`
+				if (byteSize + Buffer.byteLength(summary, "utf8") < MAX_BYTE_SIZE) {
+					output += summary
+					byteSize += Buffer.byteLength(summary, "utf8")
+				}
+			}
+		}
+
+
 		let fileSkippedResults = 0
 		let lastLineNum = -1
 		for (const line of fileResult.lines) {

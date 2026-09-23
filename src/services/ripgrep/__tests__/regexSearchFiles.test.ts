@@ -93,6 +93,27 @@ describe("Ripgrep search result anchors", () => {
 		assert.equal(emittedAnchor, AnchorStateManager.getAnchors(filePath, taskId)?.[0])
 	})
 
+	it("summarizes a few anchored matches separately from context lines", async () => {
+		const filePath = path.join(tmpDir, "matches.txt")
+		await fs.writeFile(filePath, "first\ncontext\nthird\n")
+
+		const output = await formatResults(
+			[{
+				filePath, lines: [
+					{ lineNum: 1, content: "first\n", isMatch: true },
+					{ lineNum: 2, content: "context\n", isMatch: false },
+					{ lineNum: 3, content: "third\n", isMatch: true },
+				]
+			}],
+			2, tmpDir, taskId, true,
+		)
+
+		assert.ok(output.includes('Matches: 1 "first", 3 "third"'))
+		assert.ok(output.includes('§context'))
+		assert.ok(output.includes('§first'))
+	})
+
+
 	it("does not initialize anchor state for plain search output", async () => {
 		const filePath = path.join(tmpDir, "plain.txt")
 		await fs.writeFile(filePath, "plain line")

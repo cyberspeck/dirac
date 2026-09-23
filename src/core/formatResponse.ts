@@ -70,6 +70,12 @@ export const formatResponse = {
 		contextUsagePercent?: number,
 	): string => {
 		const editFileEnabled = toolNames.has("edit_file")
+		// write_to_file replaces the whole file, so without edit_file the only safe ways to shrink one
+		// call are more files or appending through a shell.
+		const appendOption = toolNames.has("execute_command")
+			? `**Write the first part with write_to_file, then append the rest with execute_command** (for example with a \`>>\` redirect), one section per command`
+			: undefined
+		const overwriteWarning = `write_to_file replaces the whole file: never call it again on '${relPath}' to add content, or everything written before is lost.`
 		const baseError = `Failed to write to '${relPath}': The 'content' parameter was empty. This typically happens when the file content is too large to generate in a single response, or when output token limits are reached before the content parameter is fully written.`
 
 		const contextWarning =
@@ -83,10 +89,10 @@ export const formatResponse = {
 				return (
 					`${baseError}${contextWarning}\n\n` +
 					`CRITICAL: You have failed to write this file ${consecutiveFailures} times in a row. You MUST change your approach — do NOT retry the full file content in a single write_to_file call again.\n\n` +
-					`Required action — choose ONE of these strategies:\n` +
-					`1. **Break the file into multiple smaller files** if architecturally appropriate\n` +
-					`2. **Write a minimal skeleton first** using write_to_file (just imports, class/function signatures, no implementations), then add each remaining section with its own smaller write_to_file call\n\n` +
-					`Each write_to_file call should target a specific, smaller piece of content.`
+					`Required action${appendOption ? " — choose ONE of these strategies" : ""}:\n` +
+					`1. **Break the content into several smaller files**, each written with its own write_to_file call\n` +
+					(appendOption ? `2. ${appendOption}\n` : "") +
+					`\n${overwriteWarning}`
 				)
 			}
 			return (
@@ -106,8 +112,9 @@ export const formatResponse = {
 					`${baseError}${contextWarning}\n\n` +
 					`This is your ${consecutiveFailures}${consecutiveFailures === 2 ? "nd" : "rd"} failed attempt. The file content is likely too large to generate in one response. You must use a different strategy:\n\n` +
 					`Recommended approaches:\n` +
-					`1. **Use write_to_file with a minimal skeleton** (just the structure — imports, class/function signatures, no implementations), then add each remaining section with its own write_to_file call\n` +
-					`2. **Break the task into smaller steps** — write one function or section at a time, each with its own write_to_file call\n\n` +
+					`1. **Break the content into several smaller files**, each written with its own write_to_file call\n` +
+					(appendOption ? `2. ${appendOption}\n` : "") +
+					`\n${overwriteWarning}\n` +
 					`Do NOT attempt to write the full file content in a single write_to_file call again.`
 				)
 			}
@@ -126,7 +133,7 @@ export const formatResponse = {
 			return (
 				`${baseError}${contextWarning}\n\n` +
 				`Suggestions:\n` +
-				`- If the file is large, try breaking down the task into smaller steps. Write a skeleton first, then add the remaining sections with additional write_to_file calls.\n` +
+				`- If the file is large, split the content into several smaller files, each written with its own write_to_file call.${appendOption ? " Or write the first part, then append the rest with execute_command." : ""} ${overwriteWarning}\n` +
 				`- Ensure the 'content' parameter contains the complete file content before closing the tool tag.\n\n`
 			)
 		}

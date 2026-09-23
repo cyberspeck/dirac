@@ -9,6 +9,7 @@ import { formatResponse } from "./formatResponse"
 
 const withEditFile = new Set(["edit_file", "write_to_file", "execute_command"])
 const withoutEditFile = new Set(["write_to_file", "execute_command"])
+const writeOnly = new Set(["write_to_file"])
 
 describe("formatResponse", () => {
 	describe("toolError", () => {
@@ -147,10 +148,26 @@ describe("formatResponse", () => {
 			}
 		})
 
-		it("still offers a concrete path forward (skeleton, then smaller write_to_file calls) at the 3rd failure with edit_file disabled", () => {
-			const message = formatResponse.writeToFileMissingContentError("a.ts", 3, withoutEditFile)
-			message.should.containEql("skeleton")
-			message.should.containEql("write_to_file")
+		it("never advises several write_to_file calls on the same path when edit_file is disabled, since each one overwrites", () => {
+			for (const tools of [withoutEditFile, writeOnly]) {
+				for (const consecutiveFailures of [1, 2, 3]) {
+					const message = formatResponse.writeToFileMissingContentError("a.ts", consecutiveFailures, tools)
+					message.should.not.match(/skeleton|remaining section|additional write_to_file/i)
+					message.should.containEql("smaller files")
+					message.should.containEql("replaces the whole file")
+				}
+			}
+		})
+
+		it("offers appending with execute_command only when execute_command is in the request", () => {
+			for (const consecutiveFailures of [1, 2, 3]) {
+				formatResponse
+					.writeToFileMissingContentError("a.ts", consecutiveFailures, withoutEditFile)
+					.should.containEql("execute_command")
+				formatResponse
+					.writeToFileMissingContentError("a.ts", consecutiveFailures, writeOnly)
+					.should.not.containEql("execute_command")
+			}
 		})
 	})
 

@@ -6,6 +6,7 @@ import sinon from "sinon"
 import { HostProvider } from "@/hosts/host-provider"
 import { setDistinctId } from "@/services/logging/distinctId"
 import { HookRegistry } from "../HookRegistry"
+import { HookResponseParser } from "../HookResponseParser"
 import { HookFactory } from "../hook-factory"
 import { createHookTestEnv, HookTestEnv, stubHookDirs, withPlatform, writeHookScriptForPlatform } from "./test-utils"
 
@@ -187,6 +188,12 @@ console.log(JSON.stringify({ cancel: true, errorMessage: "should not run" }))`
 				lines.should.deepEqual(["Skipped PreToolUse: workspace hook not approved."])
 			})
 		}
+
+		it("should not let a script's own JSON mark the hook as skipped", () => {
+			const output = HookResponseParser.parse('{"cancel":false,"skipped":true}', "PreToolUse")
+			should.exist(output)
+			output!.skipped.should.be.false()
+		})
 
 		it("should handle script that blocks execution", async () => {
 			const hookPath = path.join(tempDir, ".diracrules", "hooks", "PreToolUse")
@@ -572,6 +579,35 @@ console.log(JSON.stringify({
 			result.cancel.should.be.false()
 			result.contextModification?.should.match(/GLOBAL: Context added/)
 			result.contextModification?.should.match(/WORKSPACE: Context added/)
+		})
+
+		it("should not report the hook as skipped when a global hook ran and the workspace hook was skipped", async () => {
+			;(HostProvider.get as sinon.SinonStub).returns({
+				globalStorageFsPath: (HostProvider.get() as any).globalStorageFsPath,
+				diracType: "extension",
+				isWorkspaceTrusted: () => false,
+			} as any)
+			// A path HookRegistry.isGlobalHooksDir() recognizes, so this script runs without approval.
+			const realGlobalDir = path.join(tempDir, "Dirac", "Hooks")
+			await fs.mkdir(realGlobalDir, { recursive: true })
+			stubHookDirs(sandbox, [realGlobalDir, workspaceHooksDir])
+			await writeHookScript(
+				path.join(realGlobalDir, "PreToolUse"),
+				`#!/usr/bin/env node
+console.log(JSON.stringify({ cancel: false, contextModification: "GLOBAL ran" }))`,
+			)
+			await writeHookScript(
+				path.join(workspaceHooksDir, "PreToolUse"),
+				`#!/usr/bin/env node
+console.log(JSON.stringify({ cancel: true, errorMessage: "should not run" }))`,
+			)
+
+			const runner = await new HookFactory().create("PreToolUse")
+			const result = await runner.run({ taskId: "test-task", preToolUse: { toolName: "test_tool", parameters: {} } })
+
+			result.cancel.should.be.false()
+			result.contextModification.should.equal("GLOBAL ran")
+			result.skipped.should.be.false()
 		})
 
 		it("should block execution if global hook blocks", async () => {

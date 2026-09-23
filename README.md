@@ -1,6 +1,6 @@
 # Dirac — local-model build
 
-> **This is a modified build, not the upstream extension.** This branch (`v0515-public`)
+> **This is a modified build, not the upstream extension.** This branch (`master`)
 > is a modified version of Dirac (Copyright Dirac Delta Labs), which is itself derived from Cline
 > (Copyright Cline Bot Inc.). Both are licensed under the Apache License 2.0; see `LICENSE`, which
 > carries both copyright notices. Files have been changed relative to upstream Dirac — the changes
@@ -36,8 +36,8 @@ changing.
   and pattern-replace tools this build is used with are custom workspace tools maintained outside
   this repository; `tools/count_text/` is kept here.
 - **Counts words**, because a word-count requirement is a real requirement.
-- **Commits your work for you.** Every completed task is auto-committed to git, so an edit you did
-  not want is always one `git revert` away. This is what makes it safe to let it write at all.
+- **Runs hooks you approve.** A workspace hook such as `TaskComplete` (for example, one that commits
+  each finished task to git) runs only once you have approved it; an unapproved one is shown as skipped.
 - **Extends itself.** `/new-tool <description>` compiles, validates and smoke-tests a new workspace
   tool; enable it in the **Tools** tab. Tools are plain TypeScript in `.dirac/tools/`.
 

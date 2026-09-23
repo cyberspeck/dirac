@@ -88,6 +88,15 @@ describe("ToolSnapshotManager task isolation", () => {
 		assert.deepEqual([...preview], [...snapshot.executableToolNames])
 	})
 
+	it("previews without scanning user tools, so workspace-code approval runs only for the snapshot", async () => {
+		const workspaceScan = sinon.stub(ToolDiscoveryService, "scanWorkspaceTools").resolves([])
+		const manager = createManager({ alpha: true, beta: true })
+
+		assert.deepEqual([...(await manager.getExecutableToolNames({ alpha: true, beta: true }))], ["alpha", "beta"])
+		sinon.assert.notCalled(workspaceScan)
+		sinon.assert.notCalled(ToolDiscoveryService.scanGlobalUserTools as sinon.SinonStub)
+	})
+
 	it("serializes process-global registry mutation into detached per-Task snapshots", async () => {
 		const managerA = createManager({ alpha: true, beta: false })
 		const managerB = createManager({ alpha: false, beta: true })

@@ -91,17 +91,29 @@ export class ToolSnapshotManager {
 			return snapshot
 		}
 
-		return this.withRegistry(this.options.getToggles(), captureSnapshot)
+		if (this.inventoryDirty) {
+			return refreshToolRegistryForWorkspace(
+				{
+					workspaceRoot: this.options.getWorkspaceRoot(),
+					includeUserTools: true,
+					toggles: this.options.getToggles(),
+				},
+				captureSnapshot,
+			)
+		}
+		return ToolRegistry.withExclusiveAccess(captureSnapshot)
 	}
 
 	/**
 	 * Names of the tools the next request will execute, for text built before its snapshot
 	 * (environment details, resume notices). Same selection as getSnapshotForRequest, without
 	 * building handlers; skills activated by that request itself are not yet included.
+	 * Registers builtins only: every name this gates is a builtin, and scanning user tools here
+	 * would run workspace-code approval before, and again with, the request's own snapshot.
 	 */
 	async getExecutableToolNames(toggles: Record<string, boolean>): Promise<Set<string>> {
-		return this.withRegistry(toggles, (registry) => {
-			registry.loadToggles(toggles)
+		const options = { workspaceRoot: this.options.getWorkspaceRoot(), includeUserTools: false, toggles }
+		return refreshToolRegistryForWorkspace(options, (registry) => {
 			const taskId = this.options.getTaskId()
 			const workspaceRoot = this.options.getWorkspaceRoot()
 			const enabledTools = registry
@@ -110,16 +122,6 @@ export class ToolSnapshotManager {
 			const tools = this.selectEffectiveTools(registry, registry.getAllTools(taskId, workspaceRoot), enabledTools)
 			return new Set(tools.map((tool) => tool.spec.name))
 		})
-	}
-
-	private withRegistry<T>(toggles: Record<string, boolean>, capture: (registry: ToolRegistry) => T): Promise<T> {
-		if (this.inventoryDirty) {
-			return refreshToolRegistryForWorkspace(
-				{ workspaceRoot: this.options.getWorkspaceRoot(), includeUserTools: true, toggles },
-				capture,
-			)
-		}
-		return ToolRegistry.withExclusiveAccess(capture)
 	}
 
 	private selectEffectiveTools(

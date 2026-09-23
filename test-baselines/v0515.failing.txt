@@ -1,0 +1,260 @@
+? :: "after each" hook: afterEach for "automatically condenses without waiting for user approval"
+? :: "after each" hook: afterEach for "completeGithubLogin does not open a browser or poll when the prompt is dismissed"
+? :: "after each" hook: afterEach for "hydrates only the new subscription before live broadcasts"
+? :: "after each" hook: afterEach for "increments consecutiveMistakeCount when paths parameter is missing or empty"
+? :: "after each" hook: afterEach for "rejects on unexpected readdir errors (not ENOENT/EPERM/EACCES)"
+? :: "after each" hook: afterEach for "retains reported request cost when a stream is cancelled"
+? :: "after each" hook: afterEach for "returns a tool result (not a thrown exception) for a non-existent directory"
+? :: "after each" hook: afterEach for "returns an Empty response on successful initialization"
+? :: "after each" hook: afterEach for "returns state update with conversationHistoryDeletedRange for task restore"
+? :: "after each" hook: afterEach for "should execute hook and call recorder methods"
+? :: "after each" hook: afterEach for "should track user edits when file watcher detects changes"
+? :: "after each" hook: afterEach for "treats composer content as feedback instead of replacing the task"
+src/core/api/providers/__tests__/deepseek.test.ts :: DeepSeekHandler replays reasoning from every prior assistant turn when tools are present
+src/core/context/context-tracking/FileContextTracker.test.ts :: FileContextTracker should track user edits when file watcher detects changes
+src/core/controller/models/__tests__/refreshHuggingFaceModels.test.ts :: parseHuggingFaceRouterModels lists only live tool-capable routes with conservative limits and no invented price
+src/core/controller/task/TaskController.test.ts :: TaskController task replacement clears a historical task whose restoration fails
+src/core/controller/task/TaskController.test.ts :: TaskController task replacement retains the approved replacement and surfaces replacement initialization failure
+src/core/controller/task/TaskController.test.ts :: TaskController task replacement surfaces a task failure that occurs before historical restoration
+src/core/controller/task/TaskController.test.ts :: TaskController task replacement times out a historical task that never reaches restoration readiness
+src/core/controller/task/goalAccountingTransport.test.ts :: Goal accounting transports round trips unavailable accounting without legacy fabrication
+src/core/controller/ui/__tests__/UiController.test.ts :: getStateToPostToWebview UI state assembly maps diracMessages from the task message state handler
+src/core/controller/ui/__tests__/UiController.test.ts :: getStateToPostToWebview UI state assembly maps isApiRequestActive from task state, defaulting to false
+src/core/controller/ui/__tests__/UiController.test.ts :: getStateToPostToWebview UI state assembly projects taskStatus from an active task
+src/core/controller/ui/__tests__/UiController.test.ts :: getStateToPostToWebview task history processing resolves currentTaskItem from taskHistory matching task.taskId
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Error Handling should handle hook input with all parameters
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Global Hooks should block execution if global hook blocks
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Global Hooks should block if workspace hook blocks even when global allows
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Global Hooks should combine error messages from global and workspace hooks
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Global Hooks should execute both global and workspace hooks
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Global Hooks should execute global hook from primary workspace root directory
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Global Hooks should work with global PostToolUse hooks
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System Global Hooks should work with only global hooks (no workspace hooks)
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System PostToolUse Hook should receive execution results
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System StdioHookRunner should execute hook script and parse output
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System StdioHookRunner should execute workspace hook from its respective workspace root directory
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System StdioHookRunner should handle script errors
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System StdioHookRunner should handle script that blocks execution
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System StdioHookRunner should pass hook input via stdin
+src/core/hooks/__tests__/hook-factory.test.ts :: Hook System StdioHookRunner should truncate large context modifications
+src/core/hooks/__tests__/taskcancel.test.ts :: TaskCancel Hook Error Handling should surface hook errors to the user
+src/core/hooks/__tests__/taskcancel.test.ts :: TaskCancel Hook Fire-and-Forget Behavior should ignore contextModification regardless of content
+src/core/hooks/__tests__/taskcancel.test.ts :: TaskCancel Hook Fire-and-Forget Behavior should return error message when hook returns cancel: true
+src/core/hooks/__tests__/taskcancel.test.ts :: TaskCancel Hook Fixture-Based Tests should handle cancel: false with error message
+src/core/hooks/__tests__/taskcancel.test.ts :: TaskCancel Hook Fixture-Based Tests should handle cancel: true with error message
+src/core/hooks/__tests__/taskcancel.test.ts :: TaskCancel Hook Fixture-Based Tests should handle cancel: true with no error message
+src/core/hooks/__tests__/taskcancel.test.ts :: TaskCancel Hook Fixture-Based Tests should handle hook that exits with non-zero status code
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Error Handling should handle hook script errors
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Fixture-Based Tests should work with context-injection fixture
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Fixture-Based Tests should work with error fixture
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Fixture-Based Tests should work with success fixture
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Global and Workspace Hooks should execute both global and workspace TaskComplete hooks
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Global and Workspace Hooks should handle when global hook has error but workspace succeeds
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Hook Behavior should capture contextModification for logging even though task is complete
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Hook Behavior should execute successfully and capture context modification
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Hook Behavior should not block task completion when hook returns cancel: true
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Hook Input Format should omit the legacy command metadata field
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Hook Input Format should receive all common hook input fields
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Hook Input Format should receive result text for logging
+src/core/hooks/__tests__/taskcomplete.test.ts :: TaskComplete Hook Hook Input Format should receive task metadata with result
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Error Handling should handle invalid timestamp gracefully
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Fixture-Based Tests should work with context-deleted fixture
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Fixture-Based Tests should work with context-injection fixture
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Fixture-Based Tests should work with error fixture
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Fixture-Based Tests should work with long-pause fixture
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Fixture-Based Tests should work with message-count fixture
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Fixture-Based Tests should work with recent-resume fixture
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Fixture-Based Tests should work with success fixture
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Global and Workspace Hooks should combine context modifications from both hooks with time analysis
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Global and Workspace Hooks should execute both global and workspace TaskResume hooks
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Hook Input Format should receive all common hook input fields
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Hook Input Format should receive all required taskResume fields
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Message Count Analysis should analyze message count thresholds
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Message Count Analysis should handle zero message count
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook State Combination Analysis should analyze combination of long pause and many messages
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook State Combination Analysis should combine context deletion with other state
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Time-Based Calculations should correctly calculate minutes ago for recent resumes
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Time-Based Calculations should handle edge case: future timestamp
+src/core/hooks/__tests__/taskresume.test.ts :: TaskResume Hook Time-Based Calculations should handle very old timestamps (days ago)
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Error Handling should handle hook script errors
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Fixture-Based Tests should work with blocking fixture
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Fixture-Based Tests should work with error fixture
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Fixture-Based Tests should work with success fixture
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Global and Workspace Hooks should block if global hook blocks
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Global and Workspace Hooks should block if workspace hook blocks even when global allows
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Global and Workspace Hooks should execute both global and workspace TaskStart hooks
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Hook Behavior should allow task to start when hook returns cancel: false
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Hook Behavior should block task when hook returns cancel: true
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Hook Behavior should provide context modification even when not added to conversation
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Hook Input Format should handle empty initialTask
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Hook Input Format should receive all common hook input fields
+src/core/hooks/__tests__/taskstart.test.ts :: TaskStart Hook Hook Input Format should receive task metadata from startTask
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Error Handling should handle hook script errors
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with blocking fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with context-injection fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with empty-prompt fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with error fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with large-prompt fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with multiline fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with special-chars fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Fixture-Based Tests should work with success fixture
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Global and Workspace Hooks should block if workspace hook blocks even when global allows
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Global and Workspace Hooks should execute both global and workspace UserPromptSubmit hooks
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Hook Input Format should handle large prompts
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Hook Input Format should handle multiline prompts
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Hook Input Format should receive all common hook input fields
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Hook Input Format should receive prompt text from user content
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Prompt Content Serialization should handle empty prompt
+src/core/hooks/__tests__/user-prompt-submit.test.ts :: UserPromptSubmit Hook Prompt Content Serialization should preserve special characters in prompt
+src/core/prompts/system-prompt/__tests__/DiracToolSet.test.ts :: DiracToolSet Utility subagent routing adds Utility routing to the generic subagent schema when configured
+src/core/prompts/system-prompt/__tests__/DiracToolSet.test.ts :: DiracToolSet Utility subagent routing preserves Utility routing in provider-native schemas
+src/core/prompts/system-prompt/__tests__/integration.test.ts :: Prompt System Integration Tests Snapshot Testing should generate a consistent provider-neutral system prompt
+src/core/prompts/system-prompt/__tests__/integration.test.ts :: Prompt System Integration Tests Snapshot Testing should generate consistent Anthropic native tools
+src/core/prompts/system-prompt/__tests__/integration.test.ts :: Prompt System Integration Tests Snapshot Testing should generate consistent Gemini native tools
+src/core/prompts/system-prompt/__tests__/integration.test.ts :: Prompt System Integration Tests Snapshot Testing should generate consistent OpenAI-compatible native tools
+src/core/storage/__tests__/StateManager.test.ts :: StateManager task working configuration capture matches the live effective getters across a precedence matrix
+src/core/storage/__tests__/StateManager.test.ts :: StateManager task working configuration capture pure builders match capture and API getters without mutating caches
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery activates every unique slash-command skill before the first provider dispatch
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction enables native web search only for a capable provider with the skill active
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction falls back to plaintext truncation and breaks stale continuation
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction installs a checkpoint after the condense result is in API history
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction preserves delivery receipts and sanitizes provider compaction input
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction propagates cancellation that occurs while compacted state is persisted
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction propagates cancellation without consuming pending compaction
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction recompacts the active checkpoint plus only its post-checkpoint suffix
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction restores the persisted target truncation range before plaintext fallback
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction resumes a persisted pending compaction after restart
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction schedules provider compaction after emergency plaintext truncation
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction skips the pre-condense token sample once after a successful condense
+src/core/task/__tests__/ApiConversationManager.test.ts :: ApiConversationManager steering delivery provider-native conversation compaction uses the openai-codex-specific auto-condense threshold
+src/core/task/__tests__/TaskAbort.test.ts :: Task abort / state transitions keeps CANCELLED status and still delegates when already cancelled
+src/core/task/__tests__/TaskAbort.test.ts :: Task abort / state transitions sets status to CANCELLING and delegates when not cancelled
+src/core/task/__tests__/TaskPromptArtifacts.test.ts :: TaskPromptArtifacts writes enabled prompt, tool, and full-history request data
+src/core/task/__tests__/TaskRequestBuilder.test.ts :: TaskRequestBuilder does not expose Utility routing for absent or invalid selections
+src/core/task/__tests__/TaskRequestBuilder.test.ts :: TaskRequestBuilder exposes Utility routing in generic and dynamic subagent schemas for a valid selection
+src/core/task/__tests__/TaskRequestBuilder.test.ts :: TaskRequestBuilder uses one request runtime for prompt context, tools, provider reporting, and metadata
+src/core/task/__tests__/ToolExecutor.browser-runtime.test.ts :: ToolExecutor browser request runtime recreates the browser from request-bound settings rather than newer Task settings
+src/core/task/__tests__/ToolExecutor.request-runtime.test.ts :: ToolExecutor request-runtime authorization builds permission handling from the supplied current configuration
+src/core/task/tools/__tests__/ToolExecutorCoordinator.live-settings.test.ts :: ToolExecutorCoordinator live task settings auto-approves after YOLO is enabled
+src/core/task/tools/__tests__/ToolExecutorCoordinator.live-settings.test.ts :: ToolExecutorCoordinator live task settings requires approval after YOLO is disabled
+src/core/task/tools/adapters/__tests__/SurfaceAdapter.test.ts :: SurfaceAdapter system trait executeCommand delegates to callbacks.executeCommandTool with suppress flags
+src/core/task/tools/adapters/__tests__/SurfaceAdapter.test.ts :: SurfaceAdapter ui trait preserves legacy YOLO approval when Utility permission handling is disabled
+src/core/task/tools/adapters/__tests__/SurfaceAdapter.test.ts :: SurfaceAdapter ui trait publishes a completed audit card for a permission-agent approval
+src/core/task/tools/adapters/traits/__tests__/OrchestrationTraitBuilder.test.ts :: OrchestrationTraitBuilder runSubagent abort signal propagation (FB-29) aborts the runner immediately when the signal is already aborted (pre-abort)
+src/core/task/tools/adapters/traits/__tests__/OrchestrationTraitBuilder.test.ts :: OrchestrationTraitBuilder runSubagent abort signal propagation (FB-29) calls runner.abort() immediately when the signal aborts mid-run
+src/core/task/tools/adapters/traits/__tests__/OrchestrationTraitBuilder.test.ts :: OrchestrationTraitBuilder runSubagent abort signal propagation (FB-29) does not call runner.abort() when the signal aborts after the run completed (post-completion)
+src/core/task/tools/adapters/traits/__tests__/OrchestrationTraitBuilder.test.ts :: OrchestrationTraitBuilder runSubagent abort signal propagation (FB-29) removes the abort listener after the run finishes so repeated runs don't leak listeners
+src/core/task/tools/adapters/traits/__tests__/OrchestrationTraitBuilder.test.ts :: OrchestrationTraitBuilder runSubagent abort signal propagation (FB-29) runs normally without an abort signal
+src/core/task/tools/context/__tests__/DiracContext.test.ts :: DiracContext persistence replays anchor recency and evicts the oldest document at capacity
+src/core/task/tools/discovery/__tests__/ToolRegistry.test.ts :: ToolRegistry replaceUserTool rejects a lower-priority replacement without mutating the existing tool
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases anchor resolution edge cases handles empty text replacement (deletes line)
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases anchor resolution edge cases handles insert_after edit type correctly
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases anchor resolution edge cases handles insert_before edit type correctly
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases anchor resolution edge cases handles multi-line text replacement
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases anchor resolution edge cases returns current disk anchors after formatting changes surrounding context
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases anchor resolution edge cases returns error when end_anchor is before anchor (range error)
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases counts the saved editor buffer before rejecting an oversized disk file
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases keeps formatter-expanded oversized output saved and clears its anchors
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases multi-file batch continues processing other files when one is diracignored
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases multi-file batch edits multiple files in a single call
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases multi-file batch finalizes every progress card when a batch save fails
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases multi-file batch resolves anchors against the editor transport's authoritative content
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases parameter validation edge cases does not apply a prepared edit when mutation consent is revoked after approval
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases parameter validation edge cases parses valid JSON string in edits field and proceeds
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.characterization.test.ts :: EditFileTool – characterization edge cases rejects every edit for a file above the hash-anchoring line limit
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.debug_syntax.test.ts :: EditFileTool – debug syntax should report syntax error in Python
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.debug_syntax.test.ts :: EditFileTool – debug syntax should report syntax errors for multiple files
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.diagnostics.test.ts :: EditFileTool.diagnostics limits new linter errors to 5
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.diagnostics.test.ts :: EditFileTool.diagnostics proceeds normally if diagnostics time out
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.diagnostics.test.ts :: EditFileTool.diagnostics reports both fixed and new errors
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.diagnostics.test.ts :: EditFileTool.diagnostics reports new linter errors with anchored context
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.diagnostics.test.ts :: EditFileTool.diagnostics reports reduction in linter errors
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.partialSuccess.test.ts :: EditFileTool.execute – partial success applies all edits successfully when there are no errors
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.partialSuccess.test.ts :: EditFileTool.execute – partial success applies all valid edits in a batch even if some fail
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.partialSuccess.test.ts :: EditFileTool.execute – partial success does not suppress the fresh mapping seeded by a failed edit with old anchors
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.partialSuccess.test.ts :: EditFileTool.execute – partial success restores persisted anchors before editing after task reconstruction
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.partialSuccess.test.ts :: EditFileTool.execute – partial success returns concise format in 'additions-only' mode
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.partialSuccess.test.ts :: EditFileTool.execute – partial success returns tool error if ALL edits in a batch fail
+src/core/task/tools/modules/edit_file/__tests__/EditFileTool.validation.test.ts :: EditFileTool.execute – validation successfully parses stringified edits array
+src/core/task/tools/modules/inspect_ast/__tests__/InspectAstTool.test.ts :: InspectAstTool preserves implementation output when the optional cache cannot save
+src/core/task/tools/modules/respond/__tests__/CompletionResponseOperation.doubleCheck.test.ts :: CompletionResponseOperation double-check completion blocks retries when a rejected candidate cannot be fingerprinted
+src/core/task/tools/modules/respond/__tests__/CompletionResponseOperation.doubleCheck.test.ts :: CompletionResponseOperation double-check completion does not mistake later user feedback for the initial task
+src/core/task/tools/modules/respond/__tests__/CompletionResponseOperation.doubleCheck.test.ts :: CompletionResponseOperation double-check completion does not sample another verifier for an unchanged failed candidate
+src/core/task/tools/modules/respond/__tests__/CompletionResponseOperation.doubleCheck.test.ts :: CompletionResponseOperation double-check completion includes raw CLI task Markdown in the subagent verifier prompt
+src/core/task/tools/modules/respond/__tests__/CompletionResponseOperation.doubleCheck.test.ts :: CompletionResponseOperation double-check completion re-verifies a changed candidate and preserves prior verifier failures
+src/core/task/tools/modules/respond/__tests__/CompletionResponseOperation.doubleCheck.test.ts :: CompletionResponseOperation double-check completion supports task-wrapped canonical input
+src/core/task/tools/modules/respond/__tests__/CompletionResponseOperation.doubleCheck.test.ts :: CompletionResponseOperation double-check completion uses the same initial-task extraction for same-agent and subagent verification
+src/core/task/tools/modules/respond/__tests__/RespondTool.test.ts :: respond tool dispatch dispatches every validated operation to its distinct lifecycle
+src/core/task/tools/modules/search_files/__tests__/SearchFilesTool.gracefulErrors.test.ts :: SearchFilesTool.execute – error recovery cancels the active search card when the task is stopped
+src/core/task/tools/modules/search_files/__tests__/SearchFilesTool.gracefulErrors.test.ts :: SearchFilesTool.execute – error recovery reports a typed timeout and terminalizes its card
+src/core/task/tools/modules/upsert_tool/__tests__/UpsertToolSupport.test.ts :: upsert_tool support feeds parent validation failures into a bounded repair attempt
+src/core/task/tools/modules/upsert_tool/__tests__/UpsertToolSupport.test.ts :: upsert_tool support stops repair attempts when the builder subagent is cancelled
+src/core/task/tools/modules/write_to_file/WriteToFileTool.backgroundEdit.test.ts :: WriteToFileTool background editing "before each" hook for "manual: background=true modifies only after approval"
+src/core/task/tools/subagent/__tests__/SubagentRunner.test.ts :: SubagentRunner retains reported request cost when a stream is cancelled
+src/core/task/tools/subagent/__tests__/SubagentRunner.test.ts :: SubagentRunner retains reported request cost when a stream is failed
+src/integrations/checkpoints/__tests__/TaskCheckpointManager.test.ts :: TaskCheckpointManager restoreCheckpoint returns state update with conversationHistoryDeletedRange for task restore
+src/integrations/openai-codex/__tests__/oauth-interactive-auth.test.ts :: interactive ChatGPT sign-in cancelling an old attempt does not cancel a newer attempt
+src/integrations/openai-codex/__tests__/oauth-interactive-auth.test.ts :: interactive ChatGPT sign-in cleans up the browser listener if delivering instructions fails
+src/integrations/openai-codex/__tests__/oauth-interactive-auth.test.ts :: interactive ChatGPT sign-in does not start an already cancelled attempt
+src/integrations/openai-codex/__tests__/oauth-interactive-auth.test.ts :: interactive ChatGPT sign-in publishes a browser URL with a listening callback server and settles on cancellation
+src/integrations/openai-codex/__tests__/oauth-interactive-auth.test.ts :: interactive ChatGPT sign-in settles malformed callback requests without rejecting the HTTP listener
+src/services/ripgrep/__tests__/regexSearchFiles.test.ts :: Ripgrep process lifecycle kills and rejects a search when its signal is aborted
+src/services/ripgrep/__tests__/regexSearchFiles.test.ts :: Ripgrep process lifecycle resolves capped output without waiting for child close
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: c matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: c matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: c matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: c matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: cpp matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: cpp matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: cpp matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: cpp matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: csharp matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: csharp matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: csharp matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: csharp matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: go matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: go matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: go matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: go matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: java matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: java matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: java matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: java matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: kotlin matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: kotlin matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: kotlin matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: kotlin matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: php matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: php matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: php matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: php matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: python matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: python matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: python matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: python matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: ruby matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: ruby matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: ruby matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: ruby matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: rust matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: rust matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: rust matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: rust matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: swift matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: swift matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: swift matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: swift matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: typescript matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: typescript matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: typescript matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: typescript matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: zig matches restored definition/reference/occurrence source locations
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: zig matches restored implementation coverage, including explicit ambiguity
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: zig matches restored replacement outcomes and verifies saved bytes
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility Language: zig matches the restored structural outline expectation
+src/services/tree-sitter/__tests__/language_compatibility.test.ts :: Source AST language compatibility exercises restored historical expectations as preserved behavior or explicit improvements
+src/shared/__tests__/openai-codex-models.test.ts :: openAiCodexModels configures GPT-6 Astra like GPT-5.6 Sol
+src/shared/storage/__tests__/env-config.test.ts :: generic Dirac environment authentication ignores an unknown explicit provider
+src/shared/storage/__tests__/env-config.test.ts :: getProviderFromEnv - Bedrock detection returns bedrock when AWS_ACCESS_KEY_ID is set
+src/shared/storage/__tests__/env-config.test.ts :: getProviderFromEnv - OpenAI detection returns openai when OPENAI_API_BASE is set
+src/shared/storage/__tests__/env-config.test.ts :: getProviderFromEnv - OpenAI detection returns openai when OPENAI_COMPATIBLE_CUSTOM_KEY is set

@@ -137,6 +137,38 @@ describe("EditExecutor required-anchor contract", () => {
 			assert.deepEqual(executor.applyEdits(source, resolvedEdits).finalLines, expected)
 		}
 	})
+	it("appends after the empty EOF anchor without adding a blank line", () => {
+		const executor = new EditExecutor()
+		const source = ["last source line", ""]
+		const anchors = ["Apple", "Banana"]
+		for (const [text, expected] of [
+			["copied block\n", "last source line\ncopied block\n"],
+			["copied block", "last source line\ncopied block\n"],
+			["\ncopied block\n", "last source line\n\ncopied block\n"],
+		] as const) {
+			const edit: Edit = { edit_type: "insert_after", anchor: coordinate("Banana", ""), text }
+			const { resolvedEdits, failedEdits } = executor.resolveEdits([block([edit])], source, anchors)
+			assert.equal(failedEdits.length, 0)
+			assert.equal(executor.applyEdits(source, resolvedEdits).finalLines.join("\n"), expected)
+		}
+	})
+
+	it("rejects simultaneous inserts at the EOF boundary", () => {
+		const executor = new EditExecutor()
+		const source = ["last source line", ""]
+		const anchors = ["Apple", "Banana"]
+		for (const other of [
+			{ edit_type: "insert_before", anchor: coordinate("Banana", ""), text: "other" },
+			{ edit_type: "insert_after", anchor: coordinate("Apple", "last source line"), text: "other" },
+		] as Edit[]) {
+			const edit: Edit = { edit_type: "insert_after", anchor: coordinate("Banana", ""), text: "copy" }
+			const { resolvedEdits, failedEdits } = executor.resolveEdits([block([edit, other])], source, anchors)
+			assert.equal(resolvedEdits.length, 0)
+			assert.equal(failedEdits.length, 2)
+		}
+	})
+
+
 
 	it("replaces a range before existing content without inserting a blank line", () => {
 		const executor = new EditExecutor()

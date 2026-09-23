@@ -312,7 +312,7 @@ export async function formatResults(
 			}
 
 			if (lastLineNum !== -1 && line.lineNum !== lastLineNum + 1) {
-				const separator = "│----\n"
+				const separator = `--- ${line.lineNum - lastLineNum - 1} lines skipped ---\n`
 				if (byteSize + Buffer.byteLength(separator, "utf8") >= MAX_BYTE_SIZE) {
 					wasLimitReached = true
 					break

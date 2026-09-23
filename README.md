@@ -1,6 +1,6 @@
 # Dirac — local-model build
 
-> **This is a modified build, not the upstream extension.** This branch (`local-model-patches`)
+> **This is a modified build, not the upstream extension.** This branch (`v0515-public`)
 > is a modified version of Dirac (Copyright Dirac Delta Labs), which is itself derived from Cline
 > (Copyright Cline Bot Inc.). Both are licensed under the Apache License 2.0; see `LICENSE`, which
 > carries both copyright notices. Files have been changed relative to upstream Dirac — the changes
@@ -9,7 +9,7 @@
 > their respective projects and are not licensed to this fork (Apache-2.0 §6).
 
 <!-- BUILD-STAMP:START -->
-**Build:** commit “fix(ui): name the auto-approved tool, preview collapsed reasoning” on `local-model-patches`, 2026-09-22.
+**Build:** `0.5.15-local.1`, commit “fix(custom search tool): anchor regex per line and refresh the cache on edit” on `v0515-public`, 2026-09-23.
 <!-- BUILD-STAMP:END -->
 
 ## What this build is for

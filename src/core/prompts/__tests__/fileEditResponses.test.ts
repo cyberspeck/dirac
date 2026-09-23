@@ -1,10 +1,18 @@
 import { strict as assert } from "node:assert"
 import * as path from "node:path"
-import { describe, it } from "mocha"
+import { afterEach, beforeEach, describe, it } from "mocha"
+import sinon from "sinon"
 import "@utils/path"
 import { formatResponse } from "@core/formatResponse"
+import { ToolRegistry } from "@core/task/tools/registry/ToolRegistry"
 
 describe("file edit responses", () => {
+	// formatResponse asks the registry whether edit_file is enabled; a bare test process has an empty registry.
+	beforeEach(() => {
+		sinon.stub(ToolRegistry, "getInstance").returns({ isEnabled: () => true } as unknown as ToolRegistry)
+	})
+	afterEach(() => sinon.restore())
+
 	it("reports a clean save without boilerplate or absent diagnostics", () => {
 		assert.equal(formatResponse.fileEditWithoutUserChanges("src/file.ts", undefined, undefined), "Saved src/file.ts.")
 		assert.equal(formatResponse.fileEditWithoutUserChanges("src/file.ts", "", ""), "Saved src/file.ts.")

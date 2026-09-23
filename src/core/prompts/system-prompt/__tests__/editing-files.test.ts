@@ -1,5 +1,6 @@
 import "should"
 import { describe, it } from "mocha"
+import { getDelimiter } from "../../../../utils/line-hashing"
 import { getEditingFilesInstructions } from "../sections/editing-files"
 
 describe("getEditingFilesInstructions", () => {
@@ -13,14 +14,22 @@ describe("getEditingFilesInstructions", () => {
 		getEditingFilesInstructions({ executeCommandEnabled: true }).should.containEql("execute_command")
 	})
 
-	it("is byte-identical to the default when every flag is explicitly enabled", () => {
+	it("is byte-identical to the pre-toggle text by default and when every flag is explicitly enabled", () => {
+		// The section as it read before the edit-tool toggles existed (f06aad1a).
+		const delimiter = getDelimiter()
+		const before = `## EDITING FILES
+
+- Use \`edit_ast\` for indexed symbol renames or whole-definition replacements, \`edit_file\` for partial edits, \`write_to_file\` for new or deliberately overwritten complete files, and \`execute_command\` only for mechanical bulk transformations.
+- \`edit_file\` requires current complete \`ANCHOR${delimiter}CONTENT\` coordinates from \`read_file\`, \`search_files\`, or \`inspect_ast\` with \`include_anchors: true\`. Copy them verbatim, use the smallest range, keep anchors out of replacement text, reread after an anchor failure, and batch only non-overlapping edits.
+`
 		const allEnabled = getEditingFilesInstructions({
 			executeCommandEnabled: true,
 			editFileEnabled: true,
 			editAstEnabled: true,
 			inspectAstEnabled: true,
 		})
-		getEditingFilesInstructions().should.equal(allEnabled)
+		allEnabled.should.equal(before)
+		getEditingFilesInstructions().should.equal(before)
 	})
 
 	it("stops naming edit_file, edit_ast and inspect_ast (and ANCHOR coordinates) when all three are disabled, but still teaches write_to_file", () => {

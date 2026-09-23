@@ -1,8 +1,16 @@
-import { describe, it } from "mocha"
+import { afterEach, beforeEach, describe, it } from "mocha"
 import "should"
+import sinon from "sinon"
 import { formatResponse } from "@core/formatResponse"
+import { ToolRegistry } from "@core/task/tools/registry/ToolRegistry"
 
 describe("formatResponse.writeToFileMissingContentError", () => {
+	// formatResponse asks the registry whether edit_file is enabled; a bare test process has an empty registry.
+	beforeEach(() => {
+		sinon.stub(ToolRegistry, "getInstance").returns({ isEnabled: () => true } as unknown as ToolRegistry)
+	})
+	afterEach(() => sinon.restore())
+
 	describe("first failure (tier 1)", () => {
 		it("should include the file path in the error message", () => {
 			const result = formatResponse.writeToFileMissingContentError("src/index.ts", 1)

@@ -3,7 +3,8 @@
 
 Scans every commit message and every *added* line in <base>..<head> for the terms in
 `.git/info/private-terms` (one case-insensitive regex per line, `#` comments, blank lines ignored).
-The list lives outside the tracked tree because the list itself is identifying.
+The list lives outside the tracked tree because the list itself is identifying. Also refuses
+`Co-Authored-By` trailers and any change under `tools/` other than `tools/count_text/`.
 
     python3 scripts/privacy-lint.py [base] [head]     # defaults: v0.5.15 HEAD
 
@@ -13,6 +14,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+
+TRAILER = re.compile(r"^co-authored-by:", re.I | re.M)
 
 
 def git(*args: str) -> str:
@@ -37,6 +41,13 @@ def main() -> int:
         short = sha[:8]
         for n, line in enumerate(git("log", "-1", "--format=%B", sha).splitlines(), 1):
             hits += [f"{short} message:{n}: [{p.pattern}] {line.strip()[:140]}" for p in patterns if p.search(line)]
+        if TRAILER.search(git("log", "-1", "--format=%B", sha)):
+            hits.append(f"{short} message: Co-Authored-By trailer (fork convention: none)")
+        hits += [
+            f"{short} {p}: only tools/count_text/ is published here"
+            for p in git("show", "--format=", "--name-only", sha).splitlines()
+            if p.startswith("tools/") and not p.startswith("tools/count_text/")
+        ]
         path = "?"
         for line in git("show", "--format=", "--unified=0", "--no-color", sha).splitlines():
             if line.startswith("+++ "):

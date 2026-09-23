@@ -164,11 +164,6 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 
 		Logger.log(`[${hookName} Hook]`, result)
 
-		// NoOp hooks return proto defaults; preserve the minimal legacy return shape.
-		if (result.cancel === false && result.contextModification === "" && result.errorMessage === "") {
-			return { wasCancelled: false }
-		}
-
 		// Check if hook wants to cancel
 		if (result.cancel === true) {
 			// Update hook status to cancelled
@@ -201,6 +196,12 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 				hasJsonResponse: true,
 				scriptPaths: hookInfo.scriptPaths,
 			})
+		}
+
+		// NoOp hooks return proto defaults; preserve the minimal legacy return shape. Checked only
+		// after the card is finalized: returning before that left every no-op hook's card "running".
+		if (result.cancel === false && result.contextModification === "" && result.errorMessage === "") {
+			return { wasCancelled: false }
 		}
 
 		return fromHookOutput(result)

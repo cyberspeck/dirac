@@ -506,7 +506,10 @@ export class LifecycleManager {
 		}
 
 		if (pendingContextWarning && pendingContextWarning.length > 0) {
-			const fileContextWarning = formatResponse.fileContextWarning(pendingContextWarning)
+			const fileContextWarning = formatResponse.fileContextWarning(
+				pendingContextWarning,
+				(await this.dependencies.getExecutableToolNames()).has("edit_file"),
+			)
 			newUserContent.push({
 				type: "text",
 				text: fileContextWarning,

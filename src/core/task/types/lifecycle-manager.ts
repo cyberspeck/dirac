@@ -23,6 +23,8 @@ export interface LifecycleManagerDependencies {
 	messageStateHandler: MessageStateHandler
 	getWorkingConfiguration: () => TaskWorkingConfiguration
 	getRequestRuntime: () => TaskRequestRuntime | undefined
+	/** Tool names the next request will send, for notices built before its snapshot. */
+	getExecutableToolNames: () => Promise<ReadonlySet<string>>
 	api: ApiHandler
 	taskId: string
 	ulid: string

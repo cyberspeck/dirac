@@ -6,11 +6,24 @@ import { afterEach, describe, it } from "mocha"
 import * as sinon from "sinon"
 import { EnvironmentManager } from "../EnvironmentManager"
 import { TaskState } from "../TaskState"
+import type { DiracDefaultTool, DiracToolSpec } from "@shared/tools"
+import type { DiscoveredTool } from "../tools/discovery/DiscoveredTool"
+import { ToolDiscoveryService } from "../tools/discovery/ToolDiscoveryService"
 import { ToolRegistry } from "../tools/registry/ToolRegistry"
+import { ToolSnapshotManager } from "../tools/runtime/ToolSnapshotManager"
+import type { ToolSelectionPolicy } from "../tools/runtime/ToolSelectionPolicy"
+
+const ALL_EDIT_TOOLS = new Set(["read_file", "edit_file", "edit_ast", "inspect_ast", "write_to_file", "execute_command"])
 
 function createEnvironmentManager(
 	taskState: TaskState,
-	options: { taskMode?: "plan" | "act"; requestMode?: "plan" | "act"; cwd?: string; diracIgnoreController?: any } = {},
+	options: {
+		taskMode?: "plan" | "act"
+		requestMode?: "plan" | "act"
+		cwd?: string
+		diracIgnoreController?: any
+		getExecutableToolNames?: () => Promise<ReadonlySet<string>>
+	} = {},
 ): EnvironmentManager {
 	const taskMode = options.taskMode ?? "act"
 	const requestMode = options.requestMode ?? taskMode
@@ -26,6 +39,7 @@ function createEnvironmentManager(
 			requestId: "request-1",
 			workingConfiguration: { settings: { mode: requestMode }, executionOptions: { multiRootEnabled: false } },
 		}) as any,
+		getExecutableToolNames: options.getExecutableToolNames ?? (async () => ALL_EDIT_TOOLS),
 		diracIgnoreController: options.diracIgnoreController,
 	})
 }
@@ -49,8 +63,6 @@ describe("EnvironmentManager mode-entry guidance", () => {
 	})
 
 	it("emits concise editing guidance only for a pending Act entry", async () => {
-		sinon.stub(ToolRegistry, "getInstance").returns({ isEnabled: () => true } as unknown as ToolRegistry)
-
 		const taskState = new TaskState()
 		taskState.pendingModeNotice = { mode: "act" }
 		const manager = createEnvironmentManager(taskState)
@@ -68,18 +80,60 @@ describe("EnvironmentManager mode-entry guidance", () => {
 	})
 
 	it("omits edit_ast from the Act-mode guidance when the tool is disabled", async () => {
-		const isEnabled = sinon.stub().returns(true)
-		isEnabled.withArgs("edit_ast").returns(false)
-		sinon.stub(ToolRegistry, "getInstance").returns({ isEnabled } as unknown as ToolRegistry)
-
+		const withoutEditAst = new Set([...ALL_EDIT_TOOLS].filter((name) => name !== "edit_ast"))
 		const taskState = new TaskState()
 		taskState.pendingModeNotice = { mode: "act" }
-		const manager = createEnvironmentManager(taskState)
+		const manager = createEnvironmentManager(taskState, { getExecutableToolNames: async () => withoutEditAst })
 
 		const entryDetails = await manager.getEnvironmentDetails(false)
 		assert.match(entryDetails, /## EDITING FILES/)
 		assert.doesNotMatch(entryDetails, /\bedit_ast\b/)
 		assert.match(entryDetails, /\bedit_file\b/)
+	})
+
+	describe("on the first request of a task, before any tool snapshot exists", () => {
+		const builtin = (id: string): DiscoveredTool => ({
+			id,
+			name: id,
+			source: "builtin",
+			exposure: { kind: "configurable" },
+			spec: { id: id as DiracDefaultTool, name: id, description: id } as DiracToolSpec,
+			factory: () => ({}) as never,
+			modulePath: `modules/${id}/tool.ts`,
+		})
+		const actGuidance = async (selectionPolicy?: ToolSelectionPolicy) => {
+			// A fresh process: the registry is empty until the first snapshot registers the builtins.
+			ToolRegistry.resetInstance()
+			sinon.stub(ToolDiscoveryService, "scanBuiltinTools").returns(["edit_file", "write_to_file"].map(builtin))
+			sinon.stub(ToolDiscoveryService, "scanGlobalUserTools").resolves([])
+			sinon.stub(ToolDiscoveryService, "scanWorkspaceTools").resolves([])
+			const snapshots = new ToolSnapshotManager({
+				createTaskConfig: () => ({}) as never,
+				getTaskId: () => "task-id",
+				getWorkspaceRoot: () => "/test/project",
+				getToggles: () => ({}),
+				getSelectionPolicy: () => selectionPolicy,
+				getActiveSkills: () => [],
+			})
+			const taskState = new TaskState()
+			taskState.pendingModeNotice = { mode: "act" }
+			const manager = createEnvironmentManager(taskState, {
+				getExecutableToolNames: () => snapshots.getExecutableToolNames({}),
+			})
+			return manager.getEnvironmentDetails(false)
+		}
+		afterEach(() => ToolRegistry.resetInstance())
+
+		it("teaches edit_file when the request will send it", async () => {
+			assert.match(await actGuidance(), /\bedit_file\b/)
+		})
+
+		it("does not teach edit_file when an invocation policy (--disable-tool) removes it", async () => {
+			const details = await actGuidance({ mode: "delta", enabledToolIds: [], disabledToolIds: ["edit_file"] })
+			assert.match(details, /## EDITING FILES/)
+			assert.doesNotMatch(details, /\bedit_file\b/)
+			assert.match(details, /\bwrite_to_file\b/)
+		})
 	})
 
 	it("uses the request-bound mode and does not claim a newer mismatched notice", async () => {

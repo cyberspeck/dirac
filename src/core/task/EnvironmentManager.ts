@@ -12,7 +12,6 @@ import fs from "fs/promises"
 import * as path from "path"
 import { MessageStateHandler } from "./message-state"
 import { TaskState } from "./TaskState"
-import { ToolRegistry } from "./tools/registry/ToolRegistry"
 
 const CODE_EXTENSIONS = new Set([
 	".ts",
@@ -78,6 +77,8 @@ export interface EnvironmentManagerDependencies {
 	messageStateHandler: MessageStateHandler
 	getWorkingConfiguration: () => TaskWorkingConfiguration
 	getRequestRuntime: () => TaskRequestRuntime | undefined
+	/** Tool names the request being built will send; guidance must not teach any other tool. */
+	getExecutableToolNames: () => Promise<ReadonlySet<string>>
 	workspaceManager?: WorkspaceRootManager
 	/** Files it blocks are left out of the recent-files list: naming them invites a read that fails. */
 	diracIgnoreController?: DiracIgnoreController
@@ -163,11 +164,12 @@ export class EnvironmentManager {
 			if (mode === "plan") {
 				details += `\nPLAN MODE\n${formatResponse.planModeInstructions()}`
 			} else {
+				const toolNames = await this.dependencies.getExecutableToolNames()
 				details += `\nACT MODE\n${getEditingFilesInstructions({
-					executeCommandEnabled: ToolRegistry.getInstance().isEnabled("execute_command"),
-					editFileEnabled: ToolRegistry.getInstance().isEnabled("edit_file"),
-					editAstEnabled: ToolRegistry.getInstance().isEnabled("edit_ast"),
-					inspectAstEnabled: ToolRegistry.getInstance().isEnabled("inspect_ast"),
+					executeCommandEnabled: toolNames.has("execute_command"),
+					editFileEnabled: toolNames.has("edit_file"),
+					editAstEnabled: toolNames.has("edit_ast"),
+					inspectAstEnabled: toolNames.has("inspect_ast"),
 				})}`
 			}
 		}

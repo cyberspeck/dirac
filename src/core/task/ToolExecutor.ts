@@ -407,6 +407,10 @@ export class ToolExecutor {
 			this.buildingRequestRuntime = undefined
 		}
 	}
+	/** Tool names the next request will send; for prompt text built before its snapshot exists. */
+	public getExecutableToolNames(workingConfiguration: TaskWorkingConfiguration): Promise<Set<string>> {
+		return this.snapshotManager.getExecutableToolNames(workingConfiguration.settings.toolToggles || {})
+	}
 	public getActiveSnapshot(): ToolRequestSnapshot | undefined {
 		return this.snapshotManager.getActiveSnapshot()
 	}

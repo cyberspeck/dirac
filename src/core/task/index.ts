@@ -756,6 +756,7 @@ export class Task {
 			getWorkingConfiguration: () => this.workingConfiguration,
 			workspaceManager: this.workspaceManager,
 			getRequestRuntime: () => this.activeRequestRuntime,
+			getExecutableToolNames: this.getExecutableToolNames,
 			diracIgnoreController: this.diracIgnoreController,
 		})
 
@@ -796,6 +797,7 @@ export class Task {
 			messageStateHandler: this.messageStateHandler,
 			getWorkingConfiguration: () => this.activeRequestRuntime?.workingConfiguration ?? this.workingConfiguration,
 			getRequestRuntime: () => this.activeRequestRuntime,
+			getExecutableToolNames: this.getExecutableToolNames,
 			api: this.api,
 			taskId: this.taskId,
 			ulid: this.ulid,
@@ -1005,6 +1007,9 @@ export class Task {
 
 
 
+
+	private getExecutableToolNames = (): Promise<Set<string>> =>
+		this.toolExecutor.getExecutableToolNames(this.activeRequestRuntime?.workingConfiguration ?? this.workingConfiguration)
 
 	async getEnvironmentDetails(includeFileDetails = false): Promise<string> {
 		return this.environmentManager.getEnvironmentDetails(includeFileDetails)

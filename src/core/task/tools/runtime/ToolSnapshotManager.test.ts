@@ -77,6 +77,17 @@ describe("ToolSnapshotManager task isolation", () => {
 		assert.deepEqual(deltaSnapshot.inventoryEnabledTools.map((tool) => tool.id), ["alpha"])
 	})
 
+	it("previews the executable tool names the request snapshot will carry", async () => {
+		sinon.stub(ToolDiscoveryService, "scanWorkspaceTools").resolves([])
+		const policy: ToolSelectionPolicy = { mode: "delta", enabledToolIds: [], disabledToolIds: ["beta"] }
+		const manager = createManager({ alpha: true, beta: true }, "task-id", "/test-workspace", policy)
+
+		const preview = await manager.getExecutableToolNames({ alpha: true, beta: true })
+		const snapshot = await manager.getSnapshotForRequest(context, { requestId: "preview", configurationRevision: 1 })
+		assert.deepEqual([...preview], ["alpha"])
+		assert.deepEqual([...preview], [...snapshot.executableToolNames])
+	})
+
 	it("serializes process-global registry mutation into detached per-Task snapshots", async () => {
 		const managerA = createManager({ alpha: true, beta: false })
 		const managerB = createManager({ alpha: false, beta: true })

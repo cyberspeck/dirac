@@ -100,7 +100,11 @@ export abstract class BaseWriteFileTool implements IDiracTool<WriteFileArgs> {
 			env.orchestration.setTaskState("consecutiveMistakeCount", env.config.taskState.consecutiveMistakeCount + 1)
 			if (toolId === DiracDefaultTool.FILE_NEW) {
 				return {
-					error: formatResponse.writeToFileMissingContentError(relPath, env.config.taskState.consecutiveMistakeCount),
+					error: formatResponse.writeToFileMissingContentError(
+						relPath,
+						env.config.taskState.consecutiveMistakeCount,
+						env.config.activeToolSnapshot?.executableToolNames ?? new Set(),
+					),
 				}
 			}
 			if (!env.config.isSubagentExecution) {

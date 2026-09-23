@@ -62,19 +62,7 @@ export class ToolSnapshotManager {
 			registry.loadToggles(this.options.getToggles())
 			const inventory = this.getInventorySnapshot(registry)
 			const activeSkills = this.options.getActiveSkills()
-			const skillTools = registry.resolveSkillDependencyTools(
-				activeSkills,
-				this.options.getTaskId(),
-				this.options.getWorkspaceRoot(),
-			)
-			const selectedConfiguredTools = applyToolSelectionPolicy(
-				inventory.tools,
-				inventory.enabledTools,
-				this.options.getSelectionPolicy(),
-			)
-			const effectiveTools = this.mergeTools(selectedConfiguredTools, skillTools).filter(
-				(tool) => this.options.isToolAvailable?.(tool) ?? true,
-			)
+			const effectiveTools = this.selectEffectiveTools(registry, inventory.tools, inventory.enabledTools)
 			const promptVisibleSpecs = this.buildPromptVisibleSpecs(effectiveTools, context)
 			const nativeTools = DiracToolSet.convertSpecsToNativeTools(promptVisibleSpecs, context)
 			const dynamicSubagentToolNames = new Set(
@@ -103,17 +91,49 @@ export class ToolSnapshotManager {
 			return snapshot
 		}
 
+		return this.withRegistry(this.options.getToggles(), captureSnapshot)
+	}
+
+	/**
+	 * Names of the tools the next request will execute, for text built before its snapshot
+	 * (environment details, resume notices). Same selection as getSnapshotForRequest, without
+	 * building handlers; skills activated by that request itself are not yet included.
+	 */
+	async getExecutableToolNames(toggles: Record<string, boolean>): Promise<Set<string>> {
+		return this.withRegistry(toggles, (registry) => {
+			registry.loadToggles(toggles)
+			const taskId = this.options.getTaskId()
+			const workspaceRoot = this.options.getWorkspaceRoot()
+			const enabledTools = registry
+				.getEnabledTools(taskId, workspaceRoot)
+				.filter((tool) => this.options.isToolAvailable?.(tool) ?? true)
+			const tools = this.selectEffectiveTools(registry, registry.getAllTools(taskId, workspaceRoot), enabledTools)
+			return new Set(tools.map((tool) => tool.spec.name))
+		})
+	}
+
+	private withRegistry<T>(toggles: Record<string, boolean>, capture: (registry: ToolRegistry) => T): Promise<T> {
 		if (this.inventoryDirty) {
 			return refreshToolRegistryForWorkspace(
-				{
-					workspaceRoot: this.options.getWorkspaceRoot(),
-					includeUserTools: true,
-					toggles: this.options.getToggles(),
-				},
-				captureSnapshot,
+				{ workspaceRoot: this.options.getWorkspaceRoot(), includeUserTools: true, toggles },
+				capture,
 			)
 		}
-		return ToolRegistry.withExclusiveAccess(captureSnapshot)
+		return ToolRegistry.withExclusiveAccess(capture)
+	}
+
+	private selectEffectiveTools(
+		registry: ToolRegistry,
+		tools: readonly DiscoveredTool[],
+		enabledTools: readonly DiscoveredTool[],
+	): DiscoveredTool[] {
+		const skillTools = registry.resolveSkillDependencyTools(
+			this.options.getActiveSkills(),
+			this.options.getTaskId(),
+			this.options.getWorkspaceRoot(),
+		)
+		const selectedConfiguredTools = applyToolSelectionPolicy(tools, enabledTools, this.options.getSelectionPolicy())
+		return this.mergeTools(selectedConfiguredTools, skillTools).filter((tool) => this.options.isToolAvailable?.(tool) ?? true)
 	}
 
 	private getInventorySnapshot(registry: ToolRegistry): ToolInventorySnapshot {

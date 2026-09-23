@@ -3,7 +3,6 @@ import * as diff from "diff"
 import * as path from "path"
 import { Mode } from "@shared/storage/types"
 import { DiracIgnoreController, LOCK_TEXT_SYMBOL } from "@core/ignore/DiracIgnoreController"
-import { ToolRegistry } from "@core/task/tools/registry/ToolRegistry"
 import type { FileInfo } from "@services/glob/list-files"
 
 const CONTEXT_WINDOW_WARNING_THRESHOLD_PERCENT = 50
@@ -62,9 +61,15 @@ export const formatResponse = {
 	 * Specialized error for write_to_file when the 'content' parameter is missing.
 	 * Provides progressive guidance based on how many times this has happened consecutively,
 	 * and includes token budget awareness to help the model understand output constraints.
+	 * `toolNames` is the tool list of the current request: advice names only tools the model can call.
 	 */
-	writeToFileMissingContentError: (relPath: string, consecutiveFailures: number, contextUsagePercent?: number): string => {
-		const editFileEnabled = ToolRegistry.getInstance().isEnabled("edit_file")
+	writeToFileMissingContentError: (
+		relPath: string,
+		consecutiveFailures: number,
+		toolNames: ReadonlySet<string>,
+		contextUsagePercent?: number,
+	): string => {
+		const editFileEnabled = toolNames.has("edit_file")
 		const baseError = `Failed to write to '${relPath}': The 'content' parameter was empty. This typically happens when the file content is too large to generate in a single response, or when output token limits are reached before the content parameter is fully written.`
 
 		const contextWarning =
@@ -316,8 +321,7 @@ export const formatResponse = {
 	agentsRulesLocalFileInstructions: (cwd: string, content: string) =>
 		`# AGENTS.md\n\nThe following is provided by AGENTS.md files found recursively throughout this working directory (${cwd.toPosix()}) where the user has specified instructions. Nested AGENTS.md will be combined below, and you should only apply the instructions for each AGENTS.md file that is directly applicable to the current task, i.e. if you are reading or writing to a file in that directory.\n\n${content}`,
 
-	fileContextWarning: (editedFiles: string[]): string => {
-		const editFileEnabled = ToolRegistry.getInstance().isEnabled("edit_file")
+	fileContextWarning: (editedFiles: string[], editFileEnabled: boolean): string => {
 		const readNotice = editFileEnabled
 			? "Read the current state before modifying these files; use include_anchors: true for edit_file coordinates."
 			: "Read the current state before modifying these files."

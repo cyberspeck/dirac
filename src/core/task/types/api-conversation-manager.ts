@@ -42,13 +42,6 @@ export interface ApiConversationManagerDependencies {
 		userContent: DiracContent[],
 		context: "initial_task" | "resume" | "feedback",
 	) => Promise<{ cancel?: boolean; wasCancelled?: boolean; contextModification?: string; errorMessage?: string }>
-	writePromptMetadataArtifacts: (params: {
-		systemPrompt: string
-		providerInfo: ApiProviderInfo
-		tools?: any[]
-		fullHistory?: any[]
-		deletedRange?: [number, number]
-	}) => Promise<void>
 	handleHookCancellation: (hookName: string, wasCancelled: boolean) => Promise<void>
 	cancelTask: () => Promise<void>
 	getPinnedContext?: () => string | undefined

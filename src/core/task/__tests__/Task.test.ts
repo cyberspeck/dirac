@@ -695,4 +695,34 @@ describe("Task (original)", () => {
 		sinon.assert.calledOnceWithExactly(reinitExistingTaskFromId, "test-api-cancel")
 	})
 
+	it("writes each request's response artifact once, next to its prompt artifact", async () => {
+		const task: any = new Task({
+			controller: createMockController(),
+			updateTaskHistory: sandbox.stub().resolves([]),
+			postStateToWebview: sandbox.stub().resolves(),
+			reinitExistingTaskFromId: sandbox.stub().resolves(),
+			cancelTask: sandbox.stub().resolves(),
+			shellIntegrationTimeout: 5000,
+			terminalReuseEnabled: true,
+			terminalOutputLineLimit: 500,
+			defaultTerminalProfile: "default",
+			vscodeTerminalExecutionMode: "vscodeTerminal",
+			cwd: tempDir,
+			stateManager: StateManager.get(),
+			task: "artifact task",
+			taskId: "art",
+			taskLockAcquired: false,
+			workingConfiguration: StateManager.get().captureEffectiveTaskConfiguration(),
+		})
+		const runtime = { workingConfiguration: { settings: { writePromptMetadataEnabled: true } } }
+		await task.requestBuilderContext(runtime).writePromptMetadataArtifacts({ systemPrompt: "p", providerInfo: {} })
+		const metrics = { inputTokens: 1, outputTokens: 2, reasoningTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }
+		const loop = task.requestLoopContext(runtime)
+		await loop.writePromptResponseArtifact({ blocks: () => [{ type: "text", text: "first" }], metrics, aborted: false })
+		await loop.writePromptResponseArtifact({ blocks: () => [{ type: "text", text: "second" }], metrics, aborted: true })
+		const response = path.join(tempDir, ".dirac-prompt-artifacts", "task-art-debug-001-response.md")
+		const markdown = await fs.readFile(response, "utf8")
+		assert.match(markdown, /first/)
+		assert.doesNotMatch(markdown, /second/)
+	})
 })

@@ -72,7 +72,7 @@ import { StreamResponseHandler } from "./StreamResponseHandler"
 import { type SteeringClaim } from "./steering"
 import { TaskMessenger } from "./TaskMessenger"
 import { handleMistakeLimitReached } from "./TaskMistakeLimit"
-import { type TaskPromptArtifactsContext, writePromptMetadataArtifacts } from "./TaskPromptArtifacts"
+import { writePromptMetadataArtifacts, writePromptResponseArtifact } from "./TaskPromptArtifacts"
 import { type TaskRequestBuilderContext } from "./TaskRequestBuilder"
 import {
 	handleApiRequestError,
@@ -162,9 +162,11 @@ export type TaskParams = {
 export class Task {
 	// Core task variables
 	readonly taskId: string
-	// Sequence number for prompt-metadata debug artifacts — see promptArtifactsContext.
+	// Sequence number for prompt-metadata debug artifacts — see requestBuilderContext.
 	// Each API request within a task gets its own file instead of overwriting the last.
 	private promptArtifactSeq = 0
+	// Path of the latest request's prompt artifact; its response is written next to it, once.
+	private promptArtifactPath?: string
 	private diracContext: DiracContext
 	readonly ulid: string
 	private taskIsFavorited?: boolean
@@ -201,19 +203,6 @@ export class Task {
 		}
 	}
 
-	private get promptArtifactsContext(): TaskPromptArtifactsContext {
-		return {
-			taskId: this.taskId,
-			// Each call gets its own sequence number so a multi-call turn (e.g. the
-			// noToolsUsed retry loop) leaves one debug artifact per API request
-			// instead of the last request overwriting all earlier ones.
-			requestSeq: ++this.promptArtifactSeq,
-			cwd: this.cwd,
-			writePromptMetadataEnabled: this.workingConfiguration.settings.writePromptMetadataEnabled,
-			writePromptMetadataDirectory: this.workingConfiguration.settings.writePromptMetadataDirectory,
-		}
-	}
-
 	private requestBuilderContext(requestRuntime: TaskRequestRuntime): TaskRequestBuilderContext {
 		return {
 			taskId: this.taskId,
@@ -230,8 +219,10 @@ export class Task {
 			taskState: this.taskState,
 			executionProfile: this.executionProfile,
 			getPinnedContext: this.getPinnedContext,
-			writePromptMetadataArtifacts: (params) =>
-				writePromptMetadataArtifacts(
+			writePromptMetadataArtifacts: async (params) => {
+				// Each call gets its own sequence number so a multi-call turn (e.g. the
+				// noToolsUsed retry loop) leaves one debug artifact per API request.
+				this.promptArtifactPath = await writePromptMetadataArtifacts(
 					{
 						taskId: this.taskId,
 						requestSeq: ++this.promptArtifactSeq,
@@ -240,7 +231,8 @@ export class Task {
 						writePromptMetadataDirectory: requestRuntime.workingConfiguration.settings.writePromptMetadataDirectory,
 					},
 					params,
-				),
+				)
+			},
 		}
 	}
 
@@ -283,7 +275,11 @@ export class Task {
 			diffViewProvider: this.diffViewProvider,
 			ulid: this.ulid,
 			conversationPersistenceHooks: this.conversationPersistenceHooks,
-
+			writePromptResponseArtifact: (params) => {
+				const promptArtifactPath = this.promptArtifactPath
+				this.promptArtifactPath = undefined
+				return writePromptResponseArtifact(promptArtifactPath, params)
+			},
 		}
 	}
 
@@ -859,7 +855,6 @@ export class Task {
 			getCurrentProviderInfo: this.getCurrentProviderInfo.bind(this),
 			getEnvironmentDetails: this.getEnvironmentDetails.bind(this),
 			getPinnedContext: () => this.taskState.pinnedContext,
-			writePromptMetadataArtifacts: (params) => writePromptMetadataArtifacts(this.promptArtifactsContext, params),
 			handleHookCancellation: this.hookManager.handleHookCancellation.bind(this.hookManager),
 			setActiveHookExecution: this.hookManager.setActiveHookExecution.bind(this.hookManager),
 			clearActiveHookExecution: this.hookManager.clearActiveHookExecution.bind(this.hookManager),
@@ -1301,16 +1296,6 @@ export class Task {
 			mode,
 			supportsNativeWebSearch: api.supportsNativeWebSearch?.() === true,
 		}
-	}
-
-	private async writePromptMetadataArtifacts(params: {
-		systemPrompt: string
-		providerInfo: ApiProviderInfo
-		tools?: any[]
-		fullHistory?: any[]
-		deletedRange?: [number, number]
-	}): Promise<void> {
-		return writePromptMetadataArtifacts(this.promptArtifactsContext, params)
 	}
 
 	private getApiRequestIdSafe(): string | undefined {

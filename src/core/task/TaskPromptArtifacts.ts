@@ -19,6 +19,99 @@ export interface TaskPromptArtifactsContext {
 	writePromptMetadataDirectory?: string
 }
 
+/** Render content blocks as Markdown; shared by the prompt dump and the response dump. */
+function renderContentBlocks(blocks: any[]): string {
+	let markdown = ""
+	for (const block of blocks) {
+		if (block.type === "text") {
+			markdown += `**Text:** ${block.call_id ? `(\`call_id: ${block.call_id}\`)` : ""}\n${block.text}\n\n`
+		} else if (block.type === "thinking") {
+			markdown += `**Thinking:** ${block.call_id ? `(\`call_id: ${block.call_id}\`)` : ""}\n${block.thinking}\n\n`
+		} else if (block.type === "redacted_thinking") {
+			markdown += `**Thinking:** [Redacted] ${block.call_id ? `(\`call_id: ${block.call_id}\`)` : ""}\n\n`
+		} else if (block.type === "tool_use") {
+			markdown += `**Tool Use:** \`${block.name}\` (\`id: ${block.id}\`, \`call_id: ${block.call_id}\`)\n`
+			markdown += `\`\`\`json\n${JSON.stringify(block.input, null, 2)}\n\`\`\`\n\n`
+		} else if (block.type === "tool_result") {
+			markdown += `**Tool Result:** (\`${block.tool_use_id}\`)\n`
+			if (typeof block.content === "string") {
+				markdown += `${block.content}\n\n`
+			} else if (Array.isArray(block.content)) {
+				for (const contentBlock of block.content) {
+					if (contentBlock.type === "text") {
+						markdown += `${contentBlock.text}\n\n`
+					} else if (contentBlock.type === "image") {
+						markdown += `[Image: ${contentBlock.source?.type}]\n\n`
+					}
+				}
+			}
+		} else if (block.type === "image") {
+			markdown += `[Image: ${block.source?.type}]\n\n`
+		}
+	}
+	return markdown
+}
+
+/**
+ * Write the model's response for one request next to its prompt artifact, as `<prompt>-response.md`.
+ * `promptArtifactPath` is what writePromptMetadataArtifacts returned; undefined (artifacts disabled or
+ * the prompt write failed) makes this a no-op, so the existing gating applies unchanged.
+ */
+export interface PromptResponseArtifactParams {
+	/** Called only when a prompt artifact exists, so disabled artifacts cost nothing. */
+	blocks: () => any[]
+	metrics: {
+		inputTokens: number
+		outputTokens: number
+		reasoningTokens: number
+		cacheReadTokens: number
+		cacheWriteTokens: number
+	}
+	totalCost?: number
+	stopReason?: string
+	aborted: boolean
+	cancelReason?: string
+	errorMessage?: string
+}
+
+export async function writePromptResponseArtifact(
+	promptArtifactPath: string | undefined,
+	params: PromptResponseArtifactParams,
+): Promise<void> {
+	if (!promptArtifactPath) {
+		return
+	}
+	try {
+		const { metrics } = params
+		let markdown = `## Response\n\n${renderContentBlocks(params.blocks()) || "(no content)\n\n"}`
+		markdown += `## Usage\n\n`
+		markdown += `- Input tokens: ${metrics.inputTokens}\n`
+		markdown += `- Output tokens: ${metrics.outputTokens}\n`
+		markdown += `- Reasoning tokens: ${metrics.reasoningTokens}\n`
+		markdown += `- Cache read tokens: ${metrics.cacheReadTokens}\n`
+		markdown += `- Cache write tokens: ${metrics.cacheWriteTokens}\n`
+		if (params.totalCost !== undefined) {
+			markdown += `- Cost: ${params.totalCost}\n`
+		}
+		markdown += `\n## Outcome\n\n`
+		markdown += `- Stop reason: ${params.stopReason ?? "(none reported)"}\n`
+		const status =
+			params.cancelReason === "streaming_failed"
+				? "failed"
+				: params.aborted || params.cancelReason
+					? "aborted"
+					: "completed"
+		markdown += `- Stream: ${status}${params.cancelReason ? ` (${params.cancelReason})` : ""}\n`
+		if (params.errorMessage) {
+			markdown += `- Error: ${params.errorMessage}\n`
+		}
+		await fs.writeFile(promptArtifactPath.replace(/\.md$/, "-response.md"), markdown, "utf8")
+	} catch (error) {
+		Logger.error("Failed to write prompt response artifact:", error)
+	}
+}
+
+/** Returns the written artifact's path, or undefined when disabled, rejected or failed. */
 export async function writePromptMetadataArtifacts(
 	ctx: TaskPromptArtifactsContext,
 	params: {
@@ -28,13 +121,13 @@ export async function writePromptMetadataArtifacts(
 		fullHistory?: any[]
 		deletedRange?: [number, number]
 	},
-): Promise<void> {
+): Promise<string | undefined> {
 	const enabledSetting = ctx.writePromptMetadataEnabled
 	const enabledFlag = process.env.DIRAC_WRITE_PROMPT_ARTIFACTS?.toLowerCase()
 	const enabled =
 		enabledSetting || enabledFlag === "1" || enabledFlag === "true" || enabledFlag === "yes" || process.env.IS_DEV === "true"
 	if (!enabled) {
-		return
+		return undefined
 	}
 
 	try {
@@ -103,40 +196,16 @@ export async function writePromptMetadataArtifacts(
 				if (typeof message.content === "string") {
 					markdown += `${message.content}\n\n`
 				} else if (Array.isArray(message.content)) {
-					for (const block of message.content) {
-						if (block.type === "text") {
-							markdown += `**Text:** ${block.call_id ? `(\`call_id: ${block.call_id}\`)` : ""}\n${block.text}\n\n`
-						} else if (block.type === "thinking") {
-							markdown += `**Thinking:** ${block.call_id ? `(\`call_id: ${block.call_id}\`)` : ""}\n${block.thinking}\n\n`
-						} else if (block.type === "redacted_thinking") {
-							markdown += `**Thinking:** [Redacted] ${block.call_id ? `(\`call_id: ${block.call_id}\`)` : ""}\n\n`
-						} else if (block.type === "tool_use") {
-							markdown += `**Tool Use:** \`${block.name}\` (\`id: ${block.id}\`, \`call_id: ${block.call_id}\`)\n`
-							markdown += `\`\`\`json\n${JSON.stringify(block.input, null, 2)}\n\`\`\`\n\n`
-						} else if (block.type === "tool_result") {
-							markdown += `**Tool Result:** (\`${block.tool_use_id}\`)\n`
-							if (typeof block.content === "string") {
-								markdown += `${block.content}\n\n`
-							} else if (Array.isArray(block.content)) {
-								for (const contentBlock of block.content) {
-									if (contentBlock.type === "text") {
-										markdown += `${contentBlock.text}\n\n`
-									} else if (contentBlock.type === "image") {
-										markdown += `[Image: ${contentBlock.source?.type}]\n\n`
-									}
-								}
-							}
-						} else if (block.type === "image") {
-							markdown += `[Image: ${block.source?.type}]\n\n`
-						}
-					}
+					markdown += renderContentBlocks(message.content)
 				}
 				markdown += "---\n\n"
 			}
 		}
 
 		await fs.writeFile(debugPath, markdown, "utf8")
+		return debugPath
 	} catch (error) {
 		Logger.error("Failed to write prompt metadata artifacts:", error)
+		return undefined
 	}
 }

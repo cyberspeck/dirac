@@ -3,7 +3,8 @@ import fs from "fs/promises"
 import os from "os"
 import path from "path"
 import { afterEach, beforeEach, describe, it } from "mocha"
-import { writePromptMetadataArtifacts } from "../TaskPromptArtifacts"
+import { expectLoggerErrors } from "@/test/loggerGuard"
+import { writePromptMetadataArtifacts, writePromptResponseArtifact } from "../TaskPromptArtifacts"
 
 const ENVIRONMENT_KEYS = ["DIRAC_WRITE_PROMPT_ARTIFACTS", "DIRAC_PROMPT_ARTIFACT_DIR", "IS_DEV"] as const
 
@@ -114,6 +115,77 @@ describe("TaskPromptArtifacts", () => {
 
 		const markdown = await fs.readFile(path.join(cwd, ".dirac-prompt-artifacts", "task-task-case-debug-001.md"), "utf8")
 		assert.match(markdown, /written despite cwd casing/)
+	})
+
+	it("writes the response, usage and outcome next to the request's prompt artifact", async () => {
+		const promptPath = await writePromptMetadataArtifacts(
+			{ taskId: "task-resp", requestSeq: 3, cwd, writePromptMetadataEnabled: true },
+			{ systemPrompt: "prompt", providerInfo: { providerId: "anthropic", modelId: "m" } },
+		)
+		assert.equal(promptPath, path.join(cwd, ".dirac-prompt-artifacts", "task-task-resp-debug-003.md"))
+
+		const metrics = { inputTokens: 11, outputTokens: 22, reasoningTokens: 5, cacheReadTokens: 7, cacheWriteTokens: 3 }
+		await writePromptResponseArtifact(promptPath, {
+			blocks: () => [
+				{ type: "thinking", thinking: "pondering" },
+				{ type: "text", text: "final answer" },
+				{ type: "tool_use", id: "tu-1", name: "read_file", input: { path: "a.txt" }, call_id: "c1" },
+			],
+			metrics,
+			totalCost: 0.0042,
+			stopReason: "tool_use",
+			aborted: false,
+		})
+		const markdown = await fs.readFile(
+			path.join(cwd, ".dirac-prompt-artifacts", "task-task-resp-debug-003-response.md"),
+			"utf8",
+		)
+		assert.match(markdown, /\*\*Thinking:\*\* \npondering/)
+		assert.match(markdown, /\*\*Text:\*\* \nfinal answer/)
+		assert.match(
+			markdown,
+			/\*\*Tool Use:\*\* `read_file` \(`id: tu-1`, `call_id: c1`\)\n```json\n\{\n {2}"path": "a.txt"\n\}/,
+		)
+		assert.match(
+			markdown,
+			/- Input tokens: 11\n- Output tokens: 22\n- Reasoning tokens: 5\n- Cache read tokens: 7\n- Cache write tokens: 3\n- Cost: 0.0042/,
+		)
+		assert.match(markdown, /- Stop reason: tool_use\n- Stream: completed\n/)
+
+		await writePromptResponseArtifact(promptPath, {
+			blocks: () => [],
+			metrics,
+			aborted: true,
+			cancelReason: "streaming_failed",
+			errorMessage: "boom",
+		})
+		const failed = await fs.readFile(
+			path.join(cwd, ".dirac-prompt-artifacts", "task-task-resp-debug-003-response.md"),
+			"utf8",
+		)
+		assert.match(failed, /- Stream: failed \(streaming_failed\)\n- Error: boom/)
+		assert.doesNotMatch(failed, /Cost:/)
+	})
+
+	it("skips the response artifact when no prompt artifact was written", async () => {
+		const promptPath = await writePromptMetadataArtifacts(
+			{ taskId: "task-off", requestSeq: 1, cwd, writePromptMetadataEnabled: false },
+			{ systemPrompt: "prompt", providerInfo: {} },
+		)
+		assert.equal(promptPath, undefined)
+		await writePromptResponseArtifact(promptPath, {
+			blocks: () => [{ type: "text", text: "x" }],
+			metrics: { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+			aborted: false,
+		})
+		// A stale/missing artifact directory must not throw either -- it is logged instead.
+		expectLoggerErrors()
+		await writePromptResponseArtifact(path.join(cwd, "missing", "task-x-debug-001.md"), {
+			blocks: () => [],
+			metrics: { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+			aborted: false,
+		})
+		assert.deepEqual(await fs.readdir(cwd), [])
 	})
 
 	it("does not create artifacts when output is disabled", async () => {

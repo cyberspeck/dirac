@@ -17,6 +17,7 @@ import type { StreamResponseHandler } from "./StreamResponseHandler"
 import type { DiracContent } from "@shared/messages/content"
 import type { DiracMessageModelInfo } from "@shared/messages/metrics"
 import { Logger } from "@shared/services/Logger"
+import type { PromptResponseArtifactParams } from "./TaskPromptArtifacts"
 import { type TaskRequestBuilderContext } from "./TaskRequestBuilder"
 import {
 	persistApiStopReason,
@@ -52,6 +53,7 @@ export interface TaskRequestLoopContext extends TaskRequestBuilderContext, TaskR
 	diffViewProvider: DiffViewProvider
 	ulid: string
 	conversationPersistenceHooks?: TaskConversationPersistenceHooks
+	writePromptResponseArtifact?: (params: PromptResponseArtifactParams) => Promise<void>
 }
 
 export async function recursivelyMakeDiracRequests(
@@ -214,6 +216,15 @@ export async function recursivelyMakeDiracRequests(
 			ctx.taskState.totalCacheReadTokens += metrics.cacheReadTokens
 			const cost = metricsManager.getTotalCost()
 			if (cost !== undefined) ctx.taskState.totalCost += cost
+			await ctx.writePromptResponseArtifact?.({
+				blocks: () => ctx.streamHandler.getOrderedBlocks(),
+				metrics,
+				totalCost: cost,
+				stopReason,
+				aborted: ctx.taskState.abort,
+				cancelReason,
+				errorMessage: streamingFailedMessage,
+			})
 
 			if (ctx.messageStateHandler.getLatestApiStatusMessage()) {
 				ctx.taskState.isApiRequestActive = false
@@ -371,6 +382,13 @@ export async function recursivelyMakeDiracRequests(
 		} catch (error) {
 			await streamCoordinator?.stop()
 			if (ctx.taskState.abort || ctx.taskState.abandoned) {
+				// Cancelled before or while streaming, without finalizeApiReqMsg: still record the response.
+				await ctx.writePromptResponseArtifact?.({
+					blocks: () => ctx.streamHandler.getOrderedBlocks(),
+					metrics: metricsManager.getMetrics(),
+					stopReason,
+					aborted: true,
+				})
 				return true
 			}
 

@@ -117,5 +117,6 @@ TS_NODE_PROJECT=./tsconfig.unit-test.json ./node_modules/.bin/mocha \
 - `fix/*` — one change proposed upstream, branched from `upstream/master`. Delete it once the PR
   is merged or dropped; branches do not accumulate.
 - Nothing is pushed without the maintainer's go. `scripts/pre-push` runs the privacy lint on every
-  pushed ref (range: everything not in `upstream/master`) and refuses the push on any hit. Install
-  it once per clone: `ln -s ../../scripts/pre-push .git/hooks/pre-push`.
+  pushed ref (range: everything not in `upstream/master`) and refuses the push on any hit. Husky
+  runs it via `.husky/pre-push` (`core.hooksPath` is `.husky/_` after `npm install`, so
+  `.git/hooks/` is never consulted); `HUSKY=0` skips it.

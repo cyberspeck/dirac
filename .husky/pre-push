@@ -1,0 +1,2 @@
+# Privacy lint on every pushed ref; see scripts/pre-push.
+exec sh scripts/pre-push "$@"

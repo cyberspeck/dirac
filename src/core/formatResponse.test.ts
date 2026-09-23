@@ -2,10 +2,18 @@
  * Tests for formatResponse — verifies the moved module exports the same API.
  * Focuses on edge cases: null/undefined inputs, empty strings, missing params.
  */
-import { describe, it } from "mocha"
+import { afterEach, describe, it } from "mocha"
 import "should"
+import sinon from "sinon"
 import { LegacyResponseTool, RESPOND_TOOL_NAME } from "@shared/responseTool"
 import { formatResponse } from "./formatResponse"
+import { ToolRegistry } from "./task/tools/registry/ToolRegistry"
+
+function stubEditFileEnabled(enabled: boolean) {
+	const isEnabled = sinon.stub().returns(true)
+	isEnabled.withArgs("edit_file").returns(enabled)
+	sinon.stub(ToolRegistry, "getInstance").returns({ isEnabled } as unknown as ToolRegistry)
+}
 
 describe("formatResponse", () => {
 	describe("toolError", () => {
@@ -103,6 +111,73 @@ describe("formatResponse", () => {
 		})
 		it("includes feedback when provided", () => {
 			formatResponse.tooManyMistakes("my feedback").should.containEql("my feedback")
+		})
+	})
+
+	describe("writeToFileMissingContentError", () => {
+		afterEach(() => sinon.restore())
+
+		it("is byte-identical to the pre-change text when edit_file is enabled, at every failure tier", () => {
+			stubEditFileEnabled(true)
+			formatResponse.writeToFileMissingContentError("a.ts", 1).should.equal(
+				`Failed to write to 'a.ts': The 'content' parameter was empty. This typically happens when the file content is too large to generate in a single response, or when output token limits are reached before the content parameter is fully written.\n\n` +
+					`Suggestions:\n` +
+					`- If the file is large, try breaking down the task into smaller steps. Write a skeleton first, then fill in sections using edit_file.\n` +
+					`- If the file already exists, prefer edit_file to make targeted edits instead of rewriting the entire file.\n` +
+					`- Ensure the 'content' parameter contains the complete file content before closing the tool tag.\n\n`,
+			)
+			formatResponse.writeToFileMissingContentError("a.ts", 2).should.equal(
+				`Failed to write to 'a.ts': The 'content' parameter was empty. This typically happens when the file content is too large to generate in a single response, or when output token limits are reached before the content parameter is fully written.\n\n` +
+					`This is your 2nd failed attempt. The file content is likely too large to generate in one response. You must use a different strategy:\n\n` +
+					`Recommended approaches:\n` +
+					`1. **Use write_to_file with a minimal skeleton** (just the structure — imports, class/function signatures, no implementations), then use edit_file to fill in each section incrementally\n` +
+					`2. **Use edit_file with smaller chunks** — if the file already exists, make targeted edits instead of rewriting the entire file\n` +
+					`3. **Break the task into smaller steps** — write one function or section at a time\n\n` +
+					`Do NOT attempt to write the full file content in a single write_to_file call again.`,
+			)
+			formatResponse.writeToFileMissingContentError("a.ts", 3).should.equal(
+				`Failed to write to 'a.ts': The 'content' parameter was empty. This typically happens when the file content is too large to generate in a single response, or when output token limits are reached before the content parameter is fully written.\n\n` +
+					`CRITICAL: You have failed to write this file 3 times in a row. You MUST change your approach — do NOT retry write_to_file for this file again.\n\n` +
+					`Required action — choose ONE of these strategies:\n` +
+					`1. **Create an empty file first, then use edit_file** to add content in small sections (recommended)\n` +
+					`2. **Break the file into multiple smaller files** if architecturally appropriate\n` +
+					`3. **Write a minimal skeleton** using write_to_file (just imports, class/function signatures, no implementations), then use edit_file to fill in each section one at a time\n\n` +
+					`Each edit_file call should target a specific part of the file.`,
+			)
+		})
+
+		it("never names edit_file and never forbids write_to_file outright when edit_file is disabled, at every failure tier", () => {
+			stubEditFileEnabled(false)
+			for (const consecutiveFailures of [1, 2, 3]) {
+				const message = formatResponse.writeToFileMissingContentError("a.ts", consecutiveFailures)
+				message.should.not.match(/\bedit_file\b/)
+				message.should.containEql("write_to_file")
+				message.should.not.match(/do NOT retry write_to_file/)
+			}
+		})
+
+		it("still offers a concrete path forward (skeleton, then smaller write_to_file calls) at the 3rd failure with edit_file disabled", () => {
+			stubEditFileEnabled(false)
+			const message = formatResponse.writeToFileMissingContentError("a.ts", 3)
+			message.should.containEql("skeleton")
+			message.should.containEql("write_to_file")
+		})
+	})
+
+	describe("fileContextWarning", () => {
+		afterEach(() => sinon.restore())
+
+		it("keeps the include_anchors/edit_file clause when edit_file is enabled", () => {
+			stubEditFileEnabled(true)
+			formatResponse.fileContextWarning(["/a.ts"]).should.containEql("include_anchors: true for edit_file coordinates")
+		})
+
+		it("drops the include_anchors/edit_file clause when edit_file is disabled", () => {
+			stubEditFileEnabled(false)
+			const warning = formatResponse.fileContextWarning(["/a.ts"])
+			warning.should.not.match(/\bedit_file\b/)
+			warning.should.not.containEql("include_anchors")
+			warning.should.containEql("Read the current state before modifying these files")
 		})
 	})
 })

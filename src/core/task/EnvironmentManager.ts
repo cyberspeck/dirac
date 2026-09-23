@@ -170,6 +170,7 @@ export class EnvironmentManager {
 					editFileEnabled: toolNames.has("edit_file"),
 					editAstEnabled: toolNames.has("edit_ast"),
 					inspectAstEnabled: toolNames.has("inspect_ast"),
+					writeToFileEnabled: toolNames.has("write_to_file"),
 				})}`
 			}
 		}

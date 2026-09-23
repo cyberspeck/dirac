@@ -7,19 +7,27 @@ const joinOr = (items: string[]): string => {
 }
 
 export const getEditingFilesInstructions = (
-	opts: { executeCommandEnabled?: boolean; editFileEnabled?: boolean; editAstEnabled?: boolean; inspectAstEnabled?: boolean } = {},
+	opts: {
+		executeCommandEnabled?: boolean
+		editFileEnabled?: boolean
+		editAstEnabled?: boolean
+		inspectAstEnabled?: boolean
+		writeToFileEnabled?: boolean
+	} = {},
 ) => {
 	const executeCommandEnabled = opts.executeCommandEnabled ?? true
 	const editFileEnabled = opts.editFileEnabled ?? true
 	const editAstEnabled = opts.editAstEnabled ?? true
 	const inspectAstEnabled = opts.inspectAstEnabled ?? true
+	const writeToFileEnabled = opts.writeToFileEnabled ?? true
 	const delimiter = getDelimiter()
 	const bulkClause = executeCommandEnabled ? ", and `execute_command` only for mechanical bulk transformations" : ""
 
 	const tools: string[] = []
 	if (editAstEnabled) tools.push("`edit_ast` for indexed symbol renames or whole-definition replacements")
 	if (editFileEnabled) tools.push("`edit_file` for partial edits")
-	tools.push("`write_to_file` for new or deliberately overwritten complete files")
+	if (writeToFileEnabled) tools.push("`write_to_file` for new or deliberately overwritten complete files")
+	if (tools.length === 0) return ""
 
 	const toolsLine = `- Use ${tools.join(", ")}${bulkClause}.`
 

@@ -47,6 +47,22 @@ describe("getEditingFilesInstructions", () => {
 		section.should.containEql("execute_command")
 	})
 
+	it("does not teach write_to_file when it is disabled", () => {
+		const section = getEditingFilesInstructions({ writeToFileEnabled: false })
+		section.should.not.match(/\bwrite_to_file\b/)
+		section.should.containEql("edit_file")
+	})
+
+	it("is empty, heading included, when no editing tool is available", () => {
+		getEditingFilesInstructions({
+			executeCommandEnabled: true,
+			editFileEnabled: false,
+			editAstEnabled: false,
+			inspectAstEnabled: false,
+			writeToFileEnabled: false,
+		}).should.equal("")
+	})
+
 	it("omits edit_ast from the tool list when it is disabled but edit_file stays", () => {
 		const section = getEditingFilesInstructions({ editAstEnabled: false })
 		section.should.not.match(/\bedit_ast\b/)

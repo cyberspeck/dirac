@@ -337,7 +337,8 @@ export async function formatResults(
 			const displayLine = includeAnchors
 				? formatLineWithHash(sourceLine, anchors![line.lineNum - 1])
 				: sourceLine
-			const lineString = includeAnchors ? `${displayLine}\n` : `│${displayLine}\n`
+			const matchMarker = includeAnchors && line.isMatch ? `--- match at line ${line.lineNum} ---\n` : ""
+			const lineString = `${matchMarker}${includeAnchors ? displayLine : `│${displayLine}`}\n`
 			if (byteSize + Buffer.byteLength(lineString, "utf8") >= MAX_BYTE_SIZE) {
 				wasLimitReached = true
 				break

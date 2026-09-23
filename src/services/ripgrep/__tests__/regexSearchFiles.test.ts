@@ -111,6 +111,8 @@ describe("Ripgrep search result anchors", () => {
 		assert.ok(output.includes('Matches: 1 "first", 3 "third"'))
 		assert.ok(output.includes('§context'))
 		assert.ok(output.includes('§first'))
+		assert.match(output, /--- match at line 1 ---\n[A-Za-z]+§first/)
+		assert.match(output, /--- match at line 3 ---\n[A-Za-z]+§third/)
 	})
 
 

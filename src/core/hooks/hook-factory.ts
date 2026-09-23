@@ -168,7 +168,7 @@ class StdioHookRunner<Name extends HookName> extends HookRunner<Name> {
 					source: this.source,
 					scriptPath: this.scriptPath,
 				})
-				return HookOutput.create({ cancel: false })
+				return HookOutput.create({ cancel: false, skipped: true })
 			}
 			const base = path.join(HostProvider.get().globalStorageFsPath, "security", "hook-snapshots")
 			await fs.mkdir(base, { recursive: true })
@@ -288,7 +288,10 @@ class CombinedHookRunner<Name extends HookName> extends HookRunner<Name> {
 			.filter((msg) => msg)
 			.join("\n")
 
-		return HookOutput.create({ cancel, contextModification, errorMessage })
+		// Skipped only if no script ran; a global hook that ran makes the whole hook "completed".
+		const skipped = results.every((result) => result.skipped)
+
+		return HookOutput.create({ cancel, contextModification, errorMessage, skipped })
 	}
 }
 

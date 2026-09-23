@@ -180,12 +180,12 @@ export async function executeHook<Name extends keyof Hooks>(options: HookExecuti
 			await clearActiveHookExecution()
 		}
 
-		// Update hook status to completed (only if not cancelled)
+		// Update hook status to completed, or skipped if no script ran (only if not cancelled)
 		if (hookMessageId !== undefined) {
 			await updateHookMessage(messageStateHandler, hookMessageId, {
 				hookName,
 				...(options.toolName && { toolName: options.toolName }),
-				status: "completed",
+				status: result.skipped ? "skipped" : "completed",
 				exitCode: 0,
 				hasJsonResponse: true,
 				scriptPaths: hookInfo.scriptPaths,
@@ -280,6 +280,8 @@ export function hookCardText(metadata: Record<string, any>, shown: string[]): st
 			return "Done."
 		case "cancelled":
 			return "Cancelled."
+		case "skipped":
+			return "Skipped."
 		case "failed":
 			return error as string
 		default:
@@ -308,7 +310,9 @@ async function updateHookMessage(
 						? CardStatus.ERROR
 						: metadata.status === "cancelled"
 							? CardStatus.CANCELLED
-							: CardStatus.RUNNING
+							: metadata.status === "skipped"
+								? CardStatus.SKIPPED
+								: CardStatus.RUNNING
 			await messageStateHandler.updateDiracMessage(index, msg)
 		}
 	}

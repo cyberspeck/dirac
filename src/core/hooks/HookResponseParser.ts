@@ -93,6 +93,7 @@ export class HookResponseParser {
 		if (!validation.valid) return null // Return null to let caller decide based on exit code
 
 		const output = HookOutput.fromJSON(outputData)
+		output.skipped = false // host-only signal; a script that ran was not skipped
 		HookResponseParser.truncateContextModification(output, hookName)
 		return output
 	}

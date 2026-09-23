@@ -38,6 +38,8 @@ message HookOutput {
   string context_modification = 1;
   bool cancel = 2;
   string error_message = 3;
+  // Set by the host, never by a script: the hook did not run (unapproved workspace hook).
+  bool skipped = 4;
 }
 
 // Data for PreToolUse hook

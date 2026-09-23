@@ -444,6 +444,7 @@ export class MockHookRunner<Name extends HookName> {
 		cancel: false,
 		contextModification: "",
 		errorMessage: "",
+		skipped: false,
 	}
 	public executionLog: Array<{ input: NamedHookInput<Name>; timestamp: number }> = []
 	public readonly hookName: Name
@@ -462,6 +463,7 @@ export class MockHookRunner<Name extends HookName> {
 			cancel: output.cancel ?? false,
 			contextModification: output.contextModification ?? "",
 			errorMessage: output.errorMessage ?? "",
+			skipped: output.skipped ?? false,
 		}
 	}
 
@@ -556,6 +558,7 @@ export class MockHookRunner<Name extends HookName> {
 			cancel: false,
 			contextModification: "",
 			errorMessage: "",
+			skipped: false,
 		}
 	}
 }

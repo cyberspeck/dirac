@@ -151,6 +151,7 @@ console.log(JSON.stringify({ cancel: true, errorMessage: "should not run" }))`
 			})
 
 			result.cancel.should.be.false()
+			result.skipped.should.be.true()
 			lines.should.deepEqual(["Skipped PreToolUse: workspace hook not approved."])
 		})
 
@@ -182,6 +183,7 @@ console.log(JSON.stringify({ cancel: true, errorMessage: "should not run" }))`
 				showMessage.calledOnce.should.be.true()
 				showTextDocument.callCount.should.equal(selectedOption ? 1 : 0)
 				result.cancel.should.be.false()
+				result.skipped.should.be.true()
 				lines.should.deepEqual(["Skipped PreToolUse: workspace hook not approved."])
 			})
 		}

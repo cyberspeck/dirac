@@ -73,6 +73,39 @@ describe("executeHook card status", () => {
 		chat.should.be.empty()
 	})
 
+	// An unapproved workspace hook did not run: its card is grey "skipped", not a success tick,
+	// and the tool call still proceeds (fail open).
+	it("marks the card of a skipped hook as skipped, without cancelling", async () => {
+		const card = { type: DiracMessageType.CARD, card: { id: "c1", status: CardStatus.RUNNING, body: "" } }
+		sinon.stub(HookFactory.prototype, "hasHook").resolves(true)
+		sinon.stub(HookFactory.prototype, "getHookInfo").resolves({ scriptPaths: ["/ws/.diracrules/hooks/TaskComplete"] } as any)
+		sinon.stub(HookFactory.prototype, "createWithStreaming").callsFake(async (_name: any, stream: any) => ({
+			run: async () => {
+				await stream("Skipped TaskComplete: workspace hook not approved.", "stdout", { source: "workspace" })
+				return { cancel: false, contextModification: "", errorMessage: "", skipped: true }
+			},
+		}) as any)
+
+		const result = await executeHook({
+			hookName: "TaskComplete",
+			hookInput: {} as any,
+			isCancellable: false,
+			messenger: { createCard: async () => ({ id: "c1" }), upsertText: async () => {} } as any,
+			messageStateHandler: {
+				findMessageIndexById: () => 0,
+				getDiracMessages: () => [{ content: card }],
+				updateDiracMessage: async () => {},
+			} as any,
+			taskId: "t1",
+			hooksEnabled: true,
+		})
+
+		result.should.deepEqual({ wasCancelled: false })
+		card.card.status.should.equal(CardStatus.SKIPPED)
+		card.card.body.should.equal("Skipped TaskComplete: workspace hook not approved.")
+		hookCardText({ status: "skipped" }, []).should.equal("Skipped.")
+	})
+
 	it("names the failure when the script printed nothing", () => {
 		hookCardText({ status: "failed", exitCode: 2 }, []).should.equal("Failed (exit 2).")
 		hookCardText({ status: "failed", error: { message: "timed out" } }, ["partial"]).should.equal("partial\ntimed out")

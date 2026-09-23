@@ -78,6 +78,8 @@ You also need [Ollama](https://ollama.com) with a model pulled, and the extensio
 | Cline, which Dirac forked | <https://github.com/cline/cline> |
 | Known defects in this build | [`FINDINGS.md`](FINDINGS.md) |
 | Fork conventions, build and patch rules | [`AGENTS.md`](AGENTS.md) |
+| Running with a local model | [`docs/local-models.md`](docs/local-models.md) |
+| Writing a workspace tool | [`docs/custom-tools.md`](docs/custom-tools.md) |
 
 ## Development
 

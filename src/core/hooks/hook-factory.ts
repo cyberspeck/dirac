@@ -164,7 +164,7 @@ class StdioHookRunner<Name extends HookName> extends HookRunner<Name> {
 			if (!this.cwd) return HookOutput.create({ cancel: false })
 			const approved = await approvedWorkspaceCode(this.cwd, this.scriptPath, undefined, true)
 			if (!approved) {
-				this.streamCallback?.(`Skipped ${path.basename(this.scriptPath)}: workspace hook not approved.`, "stdout", {
+				this.streamCallback?.(`Skipped ${this.hookName}: workspace hook not approved.`, "stdout", {
 					source: this.source,
 					scriptPath: this.scriptPath,
 				})

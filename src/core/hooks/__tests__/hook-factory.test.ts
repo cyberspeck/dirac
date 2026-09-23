@@ -124,7 +124,7 @@ console.log(JSON.stringify({
 		})
 
 		it("should skip an unapproved workspace hook without running it, and say so on the stream", async () => {
-			// Re-stub HostProvider so approvedWorkspaceCode() finds no grant and no approval prompt.
+			// Untrusted workspace (Restricted Mode): approvedWorkspaceCode() returns before any grant lookup or prompt.
 			;(HostProvider.get as sinon.SinonStub).returns({
 				globalStorageFsPath: (HostProvider.get() as any).globalStorageFsPath,
 				diracType: "extension",
@@ -153,6 +153,38 @@ console.log(JSON.stringify({ cancel: true, errorMessage: "should not run" }))`
 			result.cancel.should.be.false()
 			lines.should.deepEqual(["Skipped PreToolUse: workspace hook not approved."])
 		})
+
+		for (const [label, selectedOption] of [
+			["reviews the source", "Review source"],
+			["dismisses the prompt", undefined],
+		] as const) {
+			it(`should skip a workspace hook in a trusted workspace when the user ${label}`, async () => {
+				const showTextDocument = sinon.stub().resolves({})
+				const showMessage = sinon.stub().resolves({ selectedOption })
+				;(HostProvider.get as sinon.SinonStub).returns({
+					globalStorageFsPath: (HostProvider.get() as any).globalStorageFsPath,
+					diracType: "extension",
+					isWorkspaceTrusted: () => true,
+					hostBridge: { windowClient: { showMessage, showTextDocument } },
+				} as any)
+
+				// A Windows hook file: the notice must name the hook, not the script file.
+				await fs.writeFile(path.join(tempDir, ".diracrules", "hooks", "PreToolUse.ps1"), "Write-Output 'should not run'")
+
+				const lines: string[] = []
+				const result = await withPlatform("win32", async () => {
+					const runner = await new HookFactory().createWithStreaming("PreToolUse", (line) => {
+						lines.push(line)
+					})
+					return runner.run({ taskId: "test-task", preToolUse: { toolName: "test_tool", parameters: {} } })
+				})
+
+				showMessage.calledOnce.should.be.true()
+				showTextDocument.callCount.should.equal(selectedOption ? 1 : 0)
+				result.cancel.should.be.false()
+				lines.should.deepEqual(["Skipped PreToolUse: workspace hook not approved."])
+			})
+		}
 
 		it("should handle script that blocks execution", async () => {
 			const hookPath = path.join(tempDir, ".diracrules", "hooks", "PreToolUse")

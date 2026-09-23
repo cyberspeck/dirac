@@ -19,7 +19,8 @@ Windows is a first-class target. It is where most of the defects found so far on
 - **Identity.** Every commit's author *and* committer is
   `cyberspeck <20340757+cyberspeck@users.noreply.github.com>`. No `Co-Authored-By` trailers.
 - **Privacy lint before every push:** `python3 scripts/privacy-lint.py` (scans commit messages and
-  added lines in `v0.5.15..HEAD`). The terms list lives outside the tracked tree at
+  added lines in `v0.5.15..HEAD`; also refuses trailers and changes under `tools/` outside
+  `tools/count_text/`). The terms list lives outside the tracked tree at
   `.git/info/private-terms`, one case-insensitive regex per line; the script exits 2 if it is
   missing. Never put example terms in a tracked file.
 - **No private content** — no user names, manuscript topics or paths of a downstream deployment in
@@ -110,13 +111,11 @@ TS_NODE_PROJECT=./tsconfig.unit-test.json ./node_modules/.bin/mocha \
 
 ## Branches and remotes
 
-- `v0515-public` — the fork's main branch: the full patch set on upstream `v0.5.15`, re-authored and
-  privacy-scrubbed so its whole history above the tag can be public.
-- `local-model-patches` — the pre-rebase patch set on the 0.5.13 base; kept for reference only.
-- `fix/*` branches — single changes proposed upstream, kept separate so they stay reviewable.
-- `master` tracks `origin` (`dirac-run/dirac`) and stays clean.
-- Remote `fork` → the one public GitHub fork, `cyberspeck/dirac`. (An older fork remote under a
-  different account is being retired; do not push there.) Nothing is pushed without the
-  maintainer's go, and never before the privacy lint is clean.
-
-A change that is upstream-contributable should land on a `fix/*` branch too, not only here.
+- Remote `origin` → this fork, `cyberspeck/dirac`. Remote `upstream` → `dirac-run/dirac`; read it
+  as `upstream/master`, no local copy.
+- `master` — the fork's one long-lived branch: the full patch set on an upstream release tag.
+- `fix/*` — one change proposed upstream, branched from `upstream/master`. Delete it once the PR
+  is merged or dropped; branches do not accumulate.
+- Nothing is pushed without the maintainer's go. `scripts/pre-push` runs the privacy lint on every
+  pushed ref (range: everything not in `upstream/master`) and refuses the push on any hit. Install
+  it once per clone: `ln -s ../../scripts/pre-push .git/hooks/pre-push`.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Writes the current commit and date into README.md's BUILD-STAMP block, so the extension's
 // Overview tab says which build is installed. The Extensions tab only ever shows package.json's
-// version, which stays 0.5.13 across every rebuild of this fork and therefore identifies nothing.
+// version, which changes only on a release bump, so it cannot tell two rebuilds apart.
 // Run before `vsce package`; commit the stamped README with the build.
 import { execSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"

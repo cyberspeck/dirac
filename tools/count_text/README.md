@@ -16,9 +16,11 @@ cp dirac-tool.json tool.ts "$WORKSPACE/.dirac/tools/count_text/"
 ```
 
 Custom tools default to **disabled** (`ToolRegistry.isEnabledTool`: `override ?? tool.source === "builtin"`).
-Enable it in VS Code under Settings → Tools before it is offered to the model. Enabling is not
-enough: the tool code must also be approved once (keyed to its file hash), so any changed build
-asks for approval again.
+Enable it in VS Code under Settings → Tools before it is offered to the model. Enabling is not enough.
+The tool code must also be approved once, when the tool is discovered with its toggle on; the
+approval is keyed to the workspace location, the tool path and a hash of `dirac-tool.json` and
+`tool.ts`, so moving the workspace or editing either file asks again. In Restricted Mode the tool
+does not load.
 
 ## Counting rules
 

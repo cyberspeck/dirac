@@ -72,7 +72,7 @@ export async function extractTextFromFile(filePath: string): Promise<string> {
  * Expects the fs.access call to have already been performed prior to calling.
  * Content is automatically truncated if it exceeds 400KB to prevent context overflow.
  */
-export async function callTextExtractionFunctions(filePath: string): Promise<string> {
+export async function callTextExtractionFunctions(filePath: string, truncate = true): Promise<string> {
 	const fileExtension = path.extname(filePath).toLowerCase()
 
 	let content: string
@@ -102,13 +102,29 @@ export async function callTextExtractionFunctions(filePath: string): Promise<str
 			content = iconv.decode(fileBuffer, encoding)
 	}
 
-	// Truncate content if it exceeds 400KB to prevent context overflow
-	return truncateContent(content)
+	// Truncate content if it exceeds 400KB to prevent context overflow. Callers that select a range
+	// afterwards pass false: truncating first made everything past 400KB unreachable by any range.
+	return truncate ? truncateContent(content) : content
 }
 
-async function extractTextFromPDF(filePath: string): Promise<string> {
+/**
+ * pdf-parse's own page renderer (lib/pdf-parse.js render_page), plus a `[page N]` line before each
+ * page so a reader of the text can cite the page. N is the PDF page, not the printed page number.
+ */
+async function renderPageWithMarker(pageData: any): Promise<string> {
+	const textContent = await pageData.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false })
+	let lastY: number | undefined
+	let text = ""
+	for (const item of textContent.items) {
+		text += lastY === item.transform[5] || !lastY ? item.str : `\n${item.str}`
+		lastY = item.transform[5]
+	}
+	return `[page ${pageData.pageNumber}]\n${text}`
+}
+
+export async function extractTextFromPDF(filePath: string): Promise<string> {
 	const dataBuffer = await fs.readFile(filePath)
-	const data = await pdf(dataBuffer)
+	const data = await pdf(dataBuffer, { pagerender: renderPageWithMarker })
 	return data.text
 }
 

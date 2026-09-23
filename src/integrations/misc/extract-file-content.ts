@@ -42,7 +42,8 @@ export async function extractFileContent(absolutePath: string, modelSupportsImag
 	}
 	// Handle text files using existing extraction functions
 	try {
-		const textContent = await callTextExtractionFunctions(absolutePath)
+		// Untruncated: read_file selects a line range from this and enforces its own read limit.
+		const textContent = await callTextExtractionFunctions(absolutePath, false)
 		return {
 			text: textContent,
 		}

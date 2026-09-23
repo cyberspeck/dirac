@@ -6,7 +6,7 @@ import * as path from "path"
 import sinon from "sinon"
 import { pathToFileURL } from "url"
 import { Logger } from "@/shared/services/Logger"
-import { extractTextFromFile, processFilesIntoText } from "../extract-text"
+import { callTextExtractionFunctions, extractTextFromFile, processFilesIntoText } from "../extract-text"
 
 describe("extract-text", () => {
 	describe("extractTextFromFile", () => {
@@ -16,6 +16,60 @@ describe("extract-text", () => {
 			try {
 				const content = await extractTextFromFile(tempFile)
 				assert.strictEqual(content, "hello world")
+			} finally {
+				await fs.unlink(tempFile).catch(() => {})
+			}
+		})
+	})
+
+	describe("PDF extraction", () => {
+		/** A minimal valid PDF, one line of Helvetica text per page. */
+		function buildPdf(pages: string[]): Buffer {
+			const objects = [
+				"<< /Type /Catalog /Pages 2 0 R >>",
+				`<< /Type /Pages /Kids [${pages.map((_, i) => `${4 + i * 2} 0 R`).join(" ")}] /Count ${pages.length} >>`,
+				"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+			]
+			for (const [i, text] of pages.entries()) {
+				const stream = `BT /F1 12 Tf 72 720 Td (${text}) Tj ET`
+				objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${5 + i * 2} 0 R >>`)
+				objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`)
+			}
+			let out = "%PDF-1.4\n"
+			const offsets: number[] = []
+			for (const [i, body] of objects.entries()) {
+				offsets.push(out.length)
+				out += `${i + 1} 0 obj\n${body}\nendobj\n`
+			}
+			const xref = out.length
+			out += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+			out += offsets.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")
+			out += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
+			return Buffer.from(out, "latin1")
+		}
+
+		it("marks each page, and a range-reading caller gets the text untruncated", async () => {
+			const tempFile = path.join(os.tmpdir(), `dirac-extract-test-${Date.now()}.pdf`)
+			await fs.writeFile(tempFile, buildPdf(["first page", "second page"]))
+			try {
+				const text = await callTextExtractionFunctions(tempFile, false)
+				const lines = text.split(/\r?\n/)
+				const first = lines.indexOf("[page 1]")
+				const second = lines.indexOf("[page 2]")
+				assert.ok(first >= 0 && second > first, text)
+				assert.strictEqual(lines[first + 1], "first page")
+				assert.strictEqual(lines[second + 1], "second page")
+			} finally {
+				await fs.unlink(tempFile).catch(() => {})
+			}
+		})
+
+		it("truncates by default and not when a caller selects a range", async () => {
+			const tempFile = path.join(os.tmpdir(), `dirac-extract-test-${Date.now()}.txt`)
+			await fs.writeFile(tempFile, "x".repeat(500 * 1024))
+			try {
+				assert.ok((await callTextExtractionFunctions(tempFile)).length < 450 * 1024)
+				assert.strictEqual((await callTextExtractionFunctions(tempFile, false)).length, 500 * 1024)
 			} finally {
 				await fs.unlink(tempFile).catch(() => {})
 			}

@@ -108,6 +108,45 @@ describe("EditExecutor required-anchor contract", () => {
 		assert.match(result.failedEdits[0].error, /ordinary source text only/)
 	})
 
+	it("inserts terminated lines without adding a blank line before existing content", () => {
+		const executor = new EditExecutor()
+		const edit: Edit = { edit_type: "insert_before", anchor: coordinate("Cherry", "third"), text: "  inserted\n" }
+		const { resolvedEdits } = executor.resolveEdits([block([edit])], lines, lineAnchors)
+		assert.deepEqual(executor.applyEdits(lines, resolvedEdits).finalLines, ["first", "", "  inserted", "third"])
+	})
+
+	it("inserts an intentional blank line with two trailing newlines", () => {
+		const executor = new EditExecutor()
+		const edit: Edit = { edit_type: "insert_after", anchor: coordinate("Apple", "first"), text: "inserted\n\n" }
+		const { resolvedEdits } = executor.resolveEdits([block([edit])], lines, lineAnchors)
+		assert.deepEqual(executor.applyEdits(lines, resolvedEdits).finalLines, ["first", "inserted", "", "", "third"])
+	})
+
+	it("preserves a terminal newline for insertions and replacements at EOF", () => {
+		const executor = new EditExecutor()
+		const source = ["first"]
+		const editAtEnd: Edit = { edit_type: "insert_after", anchor: coordinate("Apple", "first"), text: "inserted\n" }
+		const replacement: Edit = {
+			edit_type: "replace", anchor: coordinate("Apple", "first"), end_anchor: coordinate("Apple", "first"), text: "replaced\n",
+		}
+		for (const [edit, expected] of [
+			[editAtEnd, ["first", "inserted", ""]],
+			[replacement, ["replaced", ""]],
+		] as const) {
+			const { resolvedEdits } = executor.resolveEdits([block([edit])], source, ["Apple"])
+			assert.deepEqual(executor.applyEdits(source, resolvedEdits).finalLines, expected)
+		}
+	})
+
+	it("replaces a range before existing content without inserting a blank line", () => {
+		const executor = new EditExecutor()
+		const edit: Edit = {
+			edit_type: "replace", anchor: coordinate("Apple", "first"), end_anchor: coordinate("Banana", ""), text: "replaced\n",
+		}
+		const { resolvedEdits } = executor.resolveEdits([block([edit])], lines, lineAnchors)
+		assert.deepEqual(executor.applyEdits(lines, resolvedEdits).finalLines, ["replaced", "third"])
+	})
+
 	it("rejects every edit in an overlapping batch", () => {
 		const executor = new EditExecutor()
 		const edits: Edit[] = [

@@ -41,7 +41,8 @@ RANGE RULES:
 1. Use the smallest range that fully contains the intended edit.
 2. For multi-line syntax, use the exact complete first and last lines, including the construct's closing syntax but no unrelated surrounding lines.
 3. Replacement text is ordinary source text and must not contain anchors.
-4. If an anchor fails, reread the smallest relevant range with include_anchors: true and copy its current anchored lines. Do not widen the range as a workaround.
+4. A trailing newline terminates the last supplied line without inserting a blank line before the next existing line. Use two trailing newlines to insert one blank line there. At end of file, a trailing newline is retained.
+5. If an anchor fails, reread the smallest relevant range with include_anchors: true and copy its current anchored lines. Do not widen the range as a workaround.
 
 BATCHING RULES:
 Batch all non-overlapping edits into one call. Edits must not overlap; multiple files may be edited in the same call.`,

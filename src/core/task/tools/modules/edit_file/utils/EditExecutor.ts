@@ -157,6 +157,10 @@ export class EditExecutor {
 			const replacementLines = edit.text === "" ? [] : edit.text.split(/\r?\n/)
 			const spliceIndex = edit.edit_type === "insert_after" ? lineIdx + 1 : lineIdx
 			const removedInThisEdit = edit.edit_type === "replace" ? endIdx - lineIdx + 1 : 0
+			// A terminal newline separates text from the next source line; it is not an extra blank line.
+			if (edit.text.endsWith("\n") && spliceIndex + removedInThisEdit < newLines.length) {
+				replacementLines.pop()
+			}
 			newLines.splice(spliceIndex, removedInThisEdit, ...replacementLines)
 			addedCount += replacementLines.length
 			removedCount += removedInThisEdit

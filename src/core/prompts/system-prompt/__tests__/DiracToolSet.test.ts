@@ -150,6 +150,13 @@ describe("DiracToolSet hidden-tool mentions", () => {
 		assert.match(hiddenSearch.description, /Regex search across files/)
 	})
 
+	it("keeps the inspect_ast preference in search_files when only edit_ast is hidden", () => {
+		const specs = DiracToolSet.withoutHiddenToolMentions([read_file_spec, search_files_spec, inspect_ast_spec], baseContext)
+		const search = specs.find((spec) => spec.name === "search_files")!
+		assert.match(search.description, /Prefer `inspect_ast` over this/)
+		assert.doesNotMatch(search.description, /\bedit_ast\b/)
+	})
+
 	it("leaves a spec alone when the tools it names are shown", () => {
 		const [read] = DiracToolSet.withoutHiddenToolMentions(
 			[read_file_spec, edit_file_spec, inspect_ast_spec, search_files_spec],

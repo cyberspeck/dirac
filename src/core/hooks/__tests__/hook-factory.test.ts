@@ -3,6 +3,7 @@ import "should"
 import fs from "fs/promises"
 import path from "path"
 import sinon from "sinon"
+import { HostProvider } from "@/hosts/host-provider"
 import { setDistinctId } from "@/services/logging/distinctId"
 import { HookRegistry } from "../HookRegistry"
 import { HookFactory } from "../hook-factory"
@@ -120,6 +121,37 @@ console.log(JSON.stringify({
 
 			result.cancel.should.be.false()
 			result.contextModification?.should.equal("TEST_CONTEXT: Added by hook")
+		})
+
+		it("should skip an unapproved workspace hook without running it, and say so on the stream", async () => {
+			// Re-stub HostProvider so approvedWorkspaceCode() finds no grant and no approval prompt.
+			;(HostProvider.get as sinon.SinonStub).returns({
+				globalStorageFsPath: (HostProvider.get() as any).globalStorageFsPath,
+				diracType: "extension",
+				isWorkspaceTrusted: () => false,
+			} as any)
+
+			const hookPath = path.join(tempDir, ".diracrules", "hooks", "PreToolUse")
+			const hookScript = `#!/usr/bin/env node
+console.log(JSON.stringify({ cancel: true, errorMessage: "should not run" }))`
+			await writeHookScript(hookPath, hookScript)
+
+			const lines: string[] = []
+			const factory = new HookFactory()
+			const runner = await factory.createWithStreaming("PreToolUse", (line) => {
+				lines.push(line)
+			})
+
+			const result = await runner.run({
+				taskId: "test-task",
+				preToolUse: {
+					toolName: "test_tool",
+					parameters: {},
+				},
+			})
+
+			result.cancel.should.be.false()
+			lines.should.deepEqual(["Skipped PreToolUse: workspace hook not approved."])
 		})
 
 		it("should handle script that blocks execution", async () => {

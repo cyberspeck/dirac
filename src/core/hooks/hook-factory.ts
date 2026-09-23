@@ -163,7 +163,13 @@ class StdioHookRunner<Name extends HookName> extends HookRunner<Name> {
 		if (this.source === "workspace") {
 			if (!this.cwd) return HookOutput.create({ cancel: false })
 			const approved = await approvedWorkspaceCode(this.cwd, this.scriptPath, undefined, true)
-			if (!approved) return HookOutput.create({ cancel: false })
+			if (!approved) {
+				this.streamCallback?.(`Skipped ${path.basename(this.scriptPath)}: workspace hook not approved.`, "stdout", {
+					source: this.source,
+					scriptPath: this.scriptPath,
+				})
+				return HookOutput.create({ cancel: false })
+			}
 			const base = path.join(HostProvider.get().globalStorageFsPath, "security", "hook-snapshots")
 			await fs.mkdir(base, { recursive: true })
 			snapshotDir = await fs.mkdtemp(path.join(base, "hook-"))

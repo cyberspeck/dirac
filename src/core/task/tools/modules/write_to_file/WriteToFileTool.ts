@@ -226,7 +226,7 @@ export abstract class BaseWriteFileTool implements IDiracTool<WriteFileArgs> {
 						modelId,
 						filesCreated: fileExists ? 0 : 1,
 					})
-					return reason ? formatResponse.toolDeniedWithFeedback(reason) : formatResponse.toolDenied()
+					return formatResponse.toolDenied()
 				}
 				approvedContent = result.userEdits?.[displayPath] ?? result.userEdits?.[absolutePath] ?? content
 			} else if (card) {

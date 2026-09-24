@@ -140,6 +140,19 @@ export class ToolExecutorCoordinator {
 
 			// 9. Store Result
 			response = result
+
+			// The note typed alongside Accept/Reject is appended once here, so every tool
+			// (including custom ones) gets it without building it itself.
+			const note = config.taskState.pendingCardNote
+			if (note) {
+				config.taskState.pendingCardNote = undefined
+				response =
+					typeof response === "string"
+						? response + formatResponse.userNote(note)
+						: Array.isArray(response)
+							? [...response, { type: "text", text: formatResponse.userNote(note).trimStart() }]
+							: response
+			}
 		} catch (error: any) {
 			executionSuccess = false
 

@@ -128,7 +128,7 @@ describe("ExecuteCommandTool", () => {
 
 		const result = await tool.processCall({ commands: ["curl https://example.com"] }, env as any)
 
-		assert.equal(result, "The user denied this operation.")
+		assert.equal(result, "The user declined this.")
 		sinon.assert.notCalled(mockCard.waitForInteraction)
 		sinon.assert.notCalled(env.system.executeCommand as sinon.SinonStub)
 	})

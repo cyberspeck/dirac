@@ -18,7 +18,9 @@ export const formatResponse = {
 		return "[Continue assisting the user!]"
 	},
 
-	toolDenied: () => `The user denied this operation.`,
+	toolDenied: () => `The user declined this.`,
+
+	userNote: (note: string) => ` The user wrote: "${note}"`,
 
 	toolDeniedWithFeedback: (feedback: string) =>
 		`The user denied this operation and provided the following feedback:\n<feedback>\n${feedback}\n</feedback>`,

@@ -179,4 +179,8 @@ export class TaskState {
 	pendingUserMessage?: string
 	pendingUserImages?: string[]
 	pendingUserFiles?: string[]
+
+	// Note typed alongside an Accept/Reject on a permission card. Consumed once
+	// by ToolExecutorCoordinator, which appends it to the tool result.
+	pendingCardNote?: string
 }

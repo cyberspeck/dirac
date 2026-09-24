@@ -1331,6 +1331,7 @@ export class Task {
 		this.taskState.userMessageContentReady = false
 		this.taskState.didRejectTool = false
 		this.taskState.didAlreadyUseTool = false
+		this.taskState.pendingCardNote = undefined
 		await this.diffViewProvider.reset()
 		this.streamHandler.reset()
 		this.taskState.toolUseIdMap.clear()

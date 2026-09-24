@@ -317,6 +317,11 @@ export class TaskMessenger implements ITaskMessenger {
 							userEdits: this.dependencies.taskState.askResponseUserEdits,
 							askTs: messageTs,
 						}
+						// The note typed with Accept/Reject is appended to the tool result once, by the coordinator.
+						const note = (result.text as string | undefined)?.trim()
+						if (note && (result.response === DiracAskResponse.APPROVE || result.response === DiracAskResponse.REJECT)) {
+							this.dependencies.taskState.pendingCardNote = note
+						}
 						// Clean up ALL response fields to prevent stale data
 						this.dependencies.taskState.askResponse = undefined
 						this.dependencies.taskState.askResponseText = undefined

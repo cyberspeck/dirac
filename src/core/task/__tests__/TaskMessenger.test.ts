@@ -246,6 +246,45 @@ describe("TaskMessenger text authorship", () => {
 		assert.deepEqual(taskState.waitingCardIds, [])
 	})
 
+	it("captures the note typed alongside a Reject as pendingCardNote", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.REJECT
+		taskState.askResponseText = " anders "
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, "anders")
+	})
+
+	it("captures the note typed alongside an Approve as pendingCardNote", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.APPROVE
+		taskState.askResponseText = "ok"
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, "ok")
+	})
+
+	it("leaves pendingCardNote unset for a Reject with no text (images only)", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.REJECT
+		taskState.askResponseImages = ["screenshot.png"]
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, undefined)
+	})
+
 	it("resolves a waiting tool permission when live auto-approval is enabled", async () => {
 		const { messenger, taskState } = createMessenger()
 		let autoApprove = false

@@ -593,6 +593,17 @@ describe("ResponseProcessor", () => {
 			sinon.assert.calledOnce(deps.diffViewProvider.closeReview)
 		})
 
+		it("still flips userMessageContentReady and does not reject when closeReview throws", async () => {
+			deps.diffViewProvider.closeReview = sinon.stub().rejects(new Error("tab close failed"))
+			taskState.assistantMessageContent = [{ type: "text", content: "done", isComplete: true, call_id: "t1" } as any]
+			taskState.isApiRequestActive = false
+			taskState.didCompleteReadingStream = true
+
+			await processor.presentAssistantMessage()
+
+			taskState.userMessageContentReady.should.be.true()
+		})
+
 		it("awaits initialCheckpointCommitPromise for non-read-only tools", async () => {
 			const checkpointPromise = Promise.resolve("hash")
 			taskState.initialCheckpointCommitPromise = checkpointPromise

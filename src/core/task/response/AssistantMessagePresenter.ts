@@ -1,4 +1,6 @@
 import { TaskStatus } from "@shared/ExtensionMessage"
+import { getErrorMessage } from "@shared/errors"
+import { Logger } from "@shared/services/Logger"
 import { Session } from "@shared/services/Session"
 import { READ_ONLY_TOOLS } from "@shared/tools"
 import { responseOperationFromToolCall, ResponseOperation } from "@shared/responseTool"
@@ -147,7 +149,11 @@ export class AssistantMessagePresenter {
 		const allProcessed = this.currentStreamingContentIndex >= this.deps.taskState.assistantMessageContent.length
 		if (allProcessed && this.deps.taskState.didCompleteReadingStream && !this.deps.taskState.userMessageContentReady) {
 			this.deps.taskState.userMessageContentReady = true
-			await this.deps.diffViewProvider.closeReview()
+			try {
+				await this.deps.diffViewProvider.closeReview()
+			} catch (error) {
+				Logger.warn("AssistantMessagePresenter: closeReview failed", getErrorMessage(error))
+			}
 		}
 	}
 }

@@ -226,6 +226,17 @@ export async function processStreamResult(
 		ctx.taskState.status = TaskStatus.AWAITING_USER_INPUT
 
 		await pWaitFor(() => ctx.taskState.userMessageContentReady)
+
+		if (ctx.taskState.didRejectTool) {
+			const toolCallCount = ctx.taskState.assistantMessageContent.filter((block) => block.type === "tool_use").length
+			if (toolCallCount >= 2) {
+				ctx.taskState.userMessageContent.push({
+					type: "text",
+					text: formatResponse.turnSummary(ctx.taskState.turnOutcomes),
+				} as DiracTextContentBlock)
+			}
+		}
+
 		const hasMutatingTools = ctx.taskState.assistantMessageContent.some(
 			(block) => block.type === "tool_use" && isMutatingTool(block.name),
 		)

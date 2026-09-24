@@ -3,7 +3,8 @@ import { CardStatus, DiracMessageType, TaskStatus } from "@shared/ExtensionMessa
 import { describe, it } from "mocha"
 import pWaitFor from "p-wait-for"
 import sinon from "sinon"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
+import { RESPOND_TOOL_NAME, ResponseCardHeader, ResponseOperation, responseCardInput } from "@shared/responseTool"
 import { ToolSkippedByUserMessage } from "../tools/types/ToolSkippedByUserMessage"
 import { TaskMessenger } from "../TaskMessenger"
 
@@ -59,7 +60,11 @@ function createMessenger(postStateToWebview = sinon.stub().resolves()) {
 		}),
 		flushPendingWrites: sinon.stub().resolves(),
 	}
-	const taskState: any = { waitingCardIds: [], status: TaskStatus.IDLE }
+	const taskState: any = {
+		waitingCardIds: [],
+		status: TaskStatus.IDLE,
+		turnOutcomes: { applied: 0, declined: 0, skipped: 0 },
+	}
 	Object.defineProperty(taskState, "lastWaitingCardId", {
 		get: () => taskState.waitingCardIds[0],
 	})
@@ -244,6 +249,169 @@ describe("TaskMessenger text authorship", () => {
 
 		await assert.rejects(interaction, ToolSkippedByUserMessage)
 		assert.deepEqual(taskState.waitingCardIds, [])
+	})
+
+	it("resolves a typed answer on a respond question card instead of throwing", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({
+			header: ResponseCardHeader.QUESTION,
+			toolName: RESPOND_TOOL_NAME,
+			rawInput: responseCardInput(ResponseOperation.QUESTION, "Which approach?", ["Option A", "Option B"]),
+			requireFeedback: true,
+		})
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		assert.equal(taskState.waitingCardAcceptsText, true)
+		taskState.askResponse = DiracAskResponse.MESSAGE
+		taskState.askResponseText = "mit geringem Symptomerleben"
+
+		const result = await interaction
+
+		assert.equal(result.text, "mit geringem Symptomerleben")
+		assert.equal(taskState.turnOutcomes.skipped, 0)
+		assert.equal(taskState.pendingCardNote, undefined)
+		assert.equal(taskState.waitingCardAcceptsText, false)
+	})
+
+	it("still throws for a Plan card answered with a typed message", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({
+			header: ResponseCardHeader.PROPOSED_PLAN,
+			toolName: RESPOND_TOOL_NAME,
+			rawInput: responseCardInput(ResponseOperation.PLAN, "Do X then Y"),
+			requireFeedback: true,
+		})
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		assert.equal(taskState.waitingCardAcceptsText, false)
+		taskState.askResponse = DiracAskResponse.MESSAGE
+		taskState.askResponseText = "mit geringem Symptomerleben"
+
+		await assert.rejects(interaction, ToolSkippedByUserMessage)
+	})
+
+	it("captures the note typed alongside a Reject as pendingCardNote", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.REJECT
+		taskState.askResponseText = " anders "
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, "anders")
+	})
+
+	it("captures the note typed alongside an Approve as pendingCardNote", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.APPROVE
+		taskState.askResponseText = "ok"
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, "ok")
+	})
+
+	it("leaves pendingCardNote unset for a Reject with no text (images only)", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.REJECT
+		taskState.askResponseImages = ["screenshot.png"]
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, undefined)
+	})
+
+	it("rejects with an empty-message ToolSkippedByUserMessage on Skip rest and counts it as skipped", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.MESSAGE
+		taskState.askResponseValue = SKIP_REST_VALUE
+
+		let caught: unknown
+		try {
+			await interaction
+		} catch (error) {
+			caught = error
+		}
+
+		assert.ok(caught instanceof ToolSkippedByUserMessage)
+		assert.equal((caught as InstanceType<typeof ToolSkippedByUserMessage>).userMessage, "")
+		assert.equal(taskState.turnOutcomes.skipped, 1)
+	})
+
+	it("sets no note and counts nothing for an Approve with text on a card with its own actions (API retry)", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({
+			header: "API Request Failed",
+			requireApproval: true,
+			actions: [
+				{ label: "Retry", value: DiracAskResponse.APPROVE, primary: true },
+				{ label: "Cancel", value: DiracAskResponse.REJECT },
+			],
+		})
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.APPROVE
+		taskState.askResponseText = "try again"
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, undefined)
+		assert.equal(taskState.turnOutcomes.applied, 0)
+	})
+
+	it("sets no note and counts nothing for a Reject with text on a question card", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Question", requireFeedback: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.REJECT
+		taskState.askResponseText = "later"
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, undefined)
+		assert.equal(taskState.turnOutcomes.declined, 0)
+	})
+
+	it("counts a manual Approve as applied and a manual Reject as declined", async () => {
+		const { messenger, taskState } = createMessenger()
+
+		const approveCard = await messenger.createCard({ header: "Permission", requireApproval: true })
+		const approveInteraction = approveCard.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.APPROVE
+		await approveInteraction
+		assert.equal(taskState.turnOutcomes.applied, 1)
+
+		const rejectCard = await messenger.createCard({ header: "Permission", requireApproval: true })
+		const rejectInteraction = rejectCard.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.REJECT
+		await rejectInteraction
+		assert.equal(taskState.turnOutcomes.declined, 1)
+	})
+
+	it("does not count an auto-approved interaction", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Permission", requireApproval: true, isAutoApproved: () => true })
+
+		await card.waitForInteraction()
+
+		assert.equal(taskState.turnOutcomes.applied, 0)
 	})
 
 	it("resolves a waiting tool permission when live auto-approval is enabled", async () => {

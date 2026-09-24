@@ -238,7 +238,7 @@ export class ExecuteCommandTool implements IDiracTool {
 		}
 		if (interaction.action !== DiracAskResponse.APPROVE) {
 			await this.resolvePermissionCard(card, "Rejected", label, CardStatus.CANCELLED, "Execution denied by user.")
-			return { approved: false, message: interaction.text }
+			return { approved: false }
 		}
 		await this.resolvePermissionCard(card, "Approved", label, CardStatus.SUCCESS)
 		return { approved: true }

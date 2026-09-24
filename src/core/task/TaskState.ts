@@ -57,6 +57,11 @@ export class TaskState {
 	askResponseImages?: string[]
 	askResponseFiles?: string[]
 	lastMessageTs?: number
+	// True while the currently-waiting card is a `respond` question card, whose typed
+	// text is the answer, not a skip. Set in TaskMessenger.waitForInteraction.
+	waitingCardAcceptsText = false
+	// Index into assistantMessageContent of the tool_use block being executed (set by the presenter).
+	activeToolBlockIndex?: number
 	waitingCardIds: string[] = []
 	get lastWaitingCardId(): string | undefined {
 		return this.waitingCardIds[0]
@@ -179,4 +184,12 @@ export class TaskState {
 	pendingUserMessage?: string
 	pendingUserImages?: string[]
 	pendingUserFiles?: string[]
+
+	// Note typed alongside an Accept/Reject on a permission card. Consumed once
+	// by ToolExecutorCoordinator, which appends it to the tool result.
+	pendingCardNote?: string
+
+	// Per-turn counters for the "This turn: applied …; declined …; skipped …" summary.
+	// Reset once per assistant message in resetStreamingState.
+	turnOutcomes: { applied: number; declined: number; skipped: number } = { applied: 0, declined: 0, skipped: 0 }
 }

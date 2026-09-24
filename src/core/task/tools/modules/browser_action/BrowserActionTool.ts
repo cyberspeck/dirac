@@ -204,7 +204,7 @@ export class BrowserActionTool implements IDiracTool {
 			})
 			await card.finalize(CardStatus.CANCELLED)
 		}
-		return reason ? formatResponse.toolDeniedWithFeedback(reason) : formatResponse.toolDenied()
+		return formatResponse.toolDenied()
 	}
 
 	private async formatBrowserActionResult(

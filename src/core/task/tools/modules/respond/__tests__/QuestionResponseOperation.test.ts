@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert"
 import { describe, it } from "mocha"
 import sinon from "sinon"
 import { CardStatus } from "@shared/ExtensionMessage"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
 import { requestQuestionResponse } from "../QuestionResponseOperation"
 import { RESPOND_TOOL_NAME, ResponseOperation } from "@shared/responseTool"
 
@@ -154,6 +154,16 @@ describe("question response operation", () => {
 		assert.doesNotMatch(serializedResult, /undefined/)
 		assert.match(serializedResult, /<answer>\\n\\n<\/answer>/)
 		assert.ok(env.workspace.formatAttachedFiles.calledOnceWithExactly(["file.txt"]))
+	})
+
+	it("never takes the Skip rest value as the answer", async () => {
+		const { env } = createEnvironment({ response: DiracAskResponse.MESSAGE, value: SKIP_REST_VALUE })
+
+		const result = await requestQuestionResponse("Which one?", [], env)
+
+		const serializedResult = JSON.stringify(result)
+		assert.doesNotMatch(serializedResult, new RegExp(SKIP_REST_VALUE))
+		assert.match(serializedResult, /<answer>\\n\\n<\/answer>/)
 	})
 
 	it("returns the autonomous-mode instruction without creating an interaction card", async () => {

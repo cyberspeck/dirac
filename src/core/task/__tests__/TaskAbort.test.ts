@@ -34,4 +34,15 @@ describe("Task abort / state transitions", () => {
 		assert.equal(task.taskState.status, TaskStatus.CANCELLED)
 		assert.equal(abort.callCount, 1)
 	})
+	it("resetStreamingState clears the active tool block index, so a retried reply shows no stale step", async () => {
+		const task = createTask() as any
+		const reset = () => {}
+		task.responseProcessor = { resetStreamState: reset }
+		task.diffViewProvider = { reset: async () => {} }
+		task.streamHandler = { reset }
+		task.assistantStreamManager = { reset }
+		task.taskState.activeToolBlockIndex = 3
+		await task.resetStreamingState()
+		assert.equal(task.taskState.activeToolBlockIndex, undefined)
+	})
 })

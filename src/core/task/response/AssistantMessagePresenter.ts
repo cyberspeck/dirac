@@ -1,4 +1,6 @@
 import { TaskStatus } from "@shared/ExtensionMessage"
+import { getErrorMessage } from "@shared/errors"
+import { Logger } from "@shared/services/Logger"
 import { Session } from "@shared/services/Session"
 import { READ_ONLY_TOOLS } from "@shared/tools"
 import { responseOperationFromToolCall, ResponseOperation } from "@shared/responseTool"
@@ -75,7 +77,7 @@ export class AssistantMessagePresenter {
 				this.lastProcessedContentLength = 0
 			} else break
 		}
-		this.checkAllBlocksProcessed()
+		await this.checkAllBlocksProcessed()
 	}
 
 	// Determine if a block is complete based on its flag and position
@@ -126,6 +128,7 @@ export class AssistantMessagePresenter {
 		await this.deps.postStateToWebview()
 		await this.deps.assistantStreamManager.pauseForToolCall()
 		await this.awaitCheckpointIfNeeded(block)
+		this.deps.taskState.activeToolBlockIndex = this.currentStreamingContentIndex
 		await this.deps.toolExecutor.executeTool(block, isBlockComplete)
 		if (block.call_id) Session.get().updateToolCall(block.call_id, block.name)
 	}
@@ -142,10 +145,15 @@ export class AssistantMessagePresenter {
 	}
 
 	// Mark userMessageContentReady when all blocks are processed and stream is done
-	private checkAllBlocksProcessed(): void {
+	private async checkAllBlocksProcessed(): Promise<void> {
 		const allProcessed = this.currentStreamingContentIndex >= this.deps.taskState.assistantMessageContent.length
-		if (allProcessed && this.deps.taskState.didCompleteReadingStream) {
+		if (allProcessed && this.deps.taskState.didCompleteReadingStream && !this.deps.taskState.userMessageContentReady) {
 			this.deps.taskState.userMessageContentReady = true
+			try {
+				await this.deps.diffViewProvider.closeReview()
+			} catch (error) {
+				Logger.warn("AssistantMessagePresenter: closeReview failed", getErrorMessage(error))
+			}
 		}
 	}
 }

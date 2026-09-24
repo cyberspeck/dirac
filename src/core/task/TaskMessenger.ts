@@ -17,7 +17,8 @@ import {
 	TaskStatus,
 } from "@shared/ExtensionMessage"
 import { Logger } from "@shared/services/Logger"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
+import { isQuestionResponseCard } from "@shared/responseTool"
 import pWaitFor from "p-wait-for"
 import { getTaskHookModelContext } from "./runtime/TaskRuntimeModelContext"
 import { TaskMessengerDependencies } from "./types/task-messenger"
@@ -234,6 +235,7 @@ export class TaskMessenger implements ITaskMessenger {
 					let previousStatus: TaskStatus | undefined
 
 					try {
+						this.dependencies.taskState.waitingCardAcceptsText = isQuestionResponseCard(card)
 						if (!this.dependencies.taskState.waitingCardIds.includes(id)) {
 							this.dependencies.taskState.waitingCardIds.push(id)
 						}
@@ -317,6 +319,25 @@ export class TaskMessenger implements ITaskMessenger {
 							userEdits: this.dependencies.taskState.askResponseUserEdits,
 							askTs: messageTs,
 						}
+						// The note typed with Accept/Reject is appended to the tool result once, by the coordinator.
+						// Only tool permission cards (Accept/Reject): cards with their own actions (API retry,
+						// question options) are not tool steps.
+						const isToolPermission = !!getCard().requireApproval && !getCard().actions?.length
+						const note = (result.text as string | undefined)?.trim()
+						if (
+							isToolPermission &&
+							note &&
+							(result.response === DiracAskResponse.APPROVE || result.response === DiracAskResponse.REJECT)
+						) {
+							this.dependencies.taskState.pendingCardNote = note
+						}
+						if (!autoApproved && isToolPermission) {
+							if (result.response === DiracAskResponse.APPROVE) {
+								this.dependencies.taskState.turnOutcomes.applied++
+							} else if (result.response === DiracAskResponse.REJECT) {
+								this.dependencies.taskState.turnOutcomes.declined++
+							}
+						}
 						// Clean up ALL response fields to prevent stale data
 						this.dependencies.taskState.askResponse = undefined
 						this.dependencies.taskState.askResponseText = undefined
@@ -334,15 +355,24 @@ export class TaskMessenger implements ITaskMessenger {
 						const responseFiles = result.files as string[] | undefined
 						const hasUserMessageContent =
 							!!responseText || (responseImages?.length ?? 0) > 0 || (responseFiles?.length ?? 0) > 0
-						if (result.response === DiracAskResponse.MESSAGE && hasUserMessageContent) {
-							// Echo the user's message in the chat UI
-							await this.upsertText(responseText ?? "", false, responseImages, responseFiles, "user")
+						const isSkipRest = result.value === SKIP_REST_VALUE
+						if (
+							result.response === DiracAskResponse.MESSAGE &&
+							(hasUserMessageContent || isSkipRest) &&
+							!this.dependencies.taskState.waitingCardAcceptsText
+						) {
+							this.dependencies.taskState.turnOutcomes.skipped++
+							if (hasUserMessageContent) {
+								// Echo the user's message in the chat UI
+								await this.upsertText(responseText ?? "", false, responseImages, responseFiles, "user")
+							}
 							const { ToolSkippedByUserMessage } = await import("./tools/types/ToolSkippedByUserMessage")
 							throw new ToolSkippedByUserMessage(responseText ?? "", responseImages, responseFiles)
 						}
 
 						return result
 					} finally {
+						this.dependencies.taskState.waitingCardAcceptsText = false
 						if (!this.dependencies.taskState.abort && previousStatus !== undefined) {
 							this.dependencies.taskState.status = previousStatus
 						}

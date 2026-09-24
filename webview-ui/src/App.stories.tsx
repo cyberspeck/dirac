@@ -581,7 +581,7 @@ export const ToolApproval: Story = {
 	parameters: {
 		docs: {
 			description: {
-				story: "Shows tool approval request with Approve/Reject buttons for file operations.",
+				story: "Shows tool approval request with Accept/Reject buttons for file operations.",
 			},
 		},
 	},
@@ -679,7 +679,7 @@ export const BrowserActionLaunch = quickStory(
 	"Browser Launch",
 	"browser_action_launch",
 	"Launch browser to test the website at http://localhost:3000",
-	"Shows browser action approval with Approve/Reject buttons for browser launch.",
+	"Shows browser action approval with Accept/Reject buttons for browser launch.",
 )
 
 export const Followup = quickStory(

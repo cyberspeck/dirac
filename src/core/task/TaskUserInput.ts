@@ -2,7 +2,7 @@ import { formatResponse } from "@core/formatResponse"
 import { processFilesIntoText } from "@integrations/misc/extract-text"
 import { Logger } from "@shared/services/Logger"
 import { TaskStatus } from "@shared/ExtensionMessage"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
 import { DiracContent } from "@shared/messages/content"
 import pWaitFor from "p-wait-for"
 import type { TaskState } from "./TaskState"
@@ -71,9 +71,15 @@ export async function submitCardResponse(
 	ctx.taskState.askResponseFiles = files
 	ctx.taskState.askResponseAction = response as string
 	ctx.taskState.askResponseValue = value
-	// When user sends a text message while a card is awaiting approval,
-	// signal that the tool should be skipped and forward to LLM.
-	if (response === DiracAskResponse.MESSAGE && text && ctx.taskState.status !== TaskStatus.CANCELLED) {
+	// When user sends a text message (or attaches images/files), or hits Skip rest with an
+	// empty box, while a card is awaiting approval, signal that the tool should be skipped
+	// and forward to LLM. Matches the hasUserMessageContent check in TaskMessenger.
+	if (
+		response === DiracAskResponse.MESSAGE &&
+		(text || (images?.length ?? 0) > 0 || (files?.length ?? 0) > 0 || value === SKIP_REST_VALUE) &&
+		ctx.taskState.status !== TaskStatus.CANCELLED &&
+		!ctx.taskState.waitingCardAcceptsText
+	) {
 		ctx.taskState.didRejectTool = true
 	}
 }

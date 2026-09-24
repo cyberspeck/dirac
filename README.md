@@ -41,6 +41,23 @@ changing.
 - **Extends itself.** `/new-tool <description>` compiles, validates and smoke-tests a new workspace
   tool; enable it in the **Tools** tab. Tools are plain TypeScript in `.dirac/tools/`.
 
+## Reviewing edits
+
+A single reply can bring several edits in a row. When it does, each card shows `Step i of n` (or
+`Step i · model still writing` while more are still arriving); a single edit shows no counter.
+Accept or Reject each one; type a note first and it goes to the model along with your decision.
+Cancel ends the task; steps already accepted stay applied.
+
+While a step of a multi-step reply waits, the send button below the box turns into `Skip rest`
+and works even with an empty box: it declines this step and every remaining one in the turn, and
+sends whatever you typed (or nothing) to the model, which answers before doing anything else.
+While any card waits, pressing Enter with text in the box does the same. On a question card,
+typing a reply and sending it just answers the question. Once the last step in a turn is decided,
+the review tab closes.
+
+To get an earlier version of a file back, right-click it in VS Code's Explorer and choose
+**Open Timeline**, which lists earlier saves and lets you open or restore one.
+
 ## Why `tools/count_text` ships here
 
 A language model cannot count words — it estimates, confidently, and where a text has a word limit that

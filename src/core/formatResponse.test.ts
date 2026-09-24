@@ -27,8 +27,14 @@ describe("formatResponse", () => {
 	})
 
 	describe("toolDenied", () => {
-		it("returns denial message", () => {
-			formatResponse.toolDenied().should.containEql("denied")
+		it("returns the plain decline message", () => {
+			formatResponse.toolDenied().should.equal("The user declined this.")
+		})
+	})
+
+	describe("userNote", () => {
+		it("wraps the note verbatim, quotes and newlines unescaped", () => {
+			formatResponse.userNote('a "b"\nc').should.equal(' The user wrote: "a "b"\nc"')
 		})
 	})
 

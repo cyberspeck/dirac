@@ -1,7 +1,7 @@
 import { IToolEnvironment } from "../../interfaces/IToolEnvironment"
 import { DiracDefaultTool } from "@/shared/tools"
 import { CardStatus } from "@shared/ExtensionMessage"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
 import { DiracIcon } from "@shared/icons"
 import { ResponseCardHeader, ResponseOperation, responseCardInput } from "@shared/responseTool"
 import { formatResponse } from "@core/formatResponse"
@@ -55,7 +55,8 @@ export async function requestQuestionResponse(question: string, options: string[
 	}
 
 	const selectedChoice = value && options.includes(value) ? value : undefined
-	const text = selectedChoice || interactionText || value
+	// Skip rest is a control signal, never an answer.
+	const text = selectedChoice || interactionText || (value === SKIP_REST_VALUE ? undefined : value)
 	await cardHandle.update({
 		header: ResponseCardHeader.ANSWERED,
 		body: `${question}\n\n---\n\n**Answer:** ${text || "(no answer)"}`,

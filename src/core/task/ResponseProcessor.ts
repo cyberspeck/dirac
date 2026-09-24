@@ -198,6 +198,9 @@ export class ResponseProcessor {
 		this.dependencies.taskState.didCompleteReadingStream = true
 		const partialToolBlocks = params.toolUseHandler.getParsedToolUseStates(true)
 		await this.syncStreamState(params.assistantTextOnly, partialToolBlocks, true)
+		// present() below waits behind a card that may still be open; post now so the
+		// webview drops "model still writing" from that card's chain position.
+		await this.dependencies.postStateToWebview()
 
 		if (this.presenter.pendingPresentationError) {
 			const err = this.presenter.pendingPresentationError

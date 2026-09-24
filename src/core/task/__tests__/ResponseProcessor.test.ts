@@ -341,6 +341,28 @@ describe("ResponseProcessor", () => {
 			taskState.didCompleteReadingStream.should.be.true()
 		})
 
+		it("posts state once the stream completes while a card still waits", async () => {
+			taskState.assistantMessageContent = [
+				{ type: "tool_use", name: "write_to_file", params: {}, isComplete: true, call_id: "call-1" } as any,
+			]
+			let releaseCard!: () => void
+			deps.toolExecutor.executeTool = sinon.stub().returns(new Promise<void>((resolve) => (releaseCard = resolve)))
+			const streamDoneAtPost: boolean[] = []
+			deps.postStateToWebview = sinon.stub().callsFake(async () => {
+				streamDoneAtPost.push(taskState.didCompleteReadingStream)
+			})
+			const presenting = processor.presentAssistantMessage()
+			await new Promise((resolve) => setImmediate(resolve))
+			sinon.assert.calledOnce(deps.toolExecutor.executeTool)
+
+			const routing = processor.routeAssistantResponse(createRouteParams({ assistantMessage: "x", assistantTextOnly: "x" }))
+			await new Promise((resolve) => setImmediate(resolve))
+
+			streamDoneAtPost.should.containEql(true)
+			releaseCard()
+			await Promise.all([presenting, routing])
+		})
+
 		it("throws pending presentation error if one occurred during streaming", async () => {
 			// Simulate a pending error
 			;(processor as any).pendingPresentationError = new Error("presentation failed")
@@ -559,6 +581,26 @@ describe("ResponseProcessor", () => {
 			taskState.isApiRequestActive = false
 			taskState.didCompleteReadingStream = true
 			await processor.presentAssistantMessage()
+			taskState.userMessageContentReady.should.be.true()
+		})
+
+		it("closes the review tab exactly once when userMessageContentReady flips", async () => {
+			taskState.assistantMessageContent = [{ type: "text", content: "done", isComplete: true, call_id: "t1" } as any]
+			taskState.isApiRequestActive = false
+			taskState.didCompleteReadingStream = true
+			await processor.presentAssistantMessage()
+			await processor.presentAssistantMessage()
+			sinon.assert.calledOnce(deps.diffViewProvider.closeReview)
+		})
+
+		it("still flips userMessageContentReady and does not reject when closeReview throws", async () => {
+			deps.diffViewProvider.closeReview = sinon.stub().rejects(new Error("tab close failed"))
+			taskState.assistantMessageContent = [{ type: "text", content: "done", isComplete: true, call_id: "t1" } as any]
+			taskState.isApiRequestActive = false
+			taskState.didCompleteReadingStream = true
+
+			await processor.presentAssistantMessage()
+
 			taskState.userMessageContentReady.should.be.true()
 		})
 
@@ -788,6 +830,7 @@ function createMockDeps(taskState: TaskState, streamHandler: StreamResponseHandl
 		},
 		assistantStreamManager: { handleChunk: sinon.stub().resolves(), pauseForToolCall: sinon.stub().resolves() },
 		toolExecutor: { executeTool: sinon.stub().resolves() },
+		diffViewProvider: { closeReview: sinon.stub().resolves() },
 		postStateToWebview: sinon.stub().resolves(),
 		ulid: "test-ulid",
 		taskId: "test-task-id",

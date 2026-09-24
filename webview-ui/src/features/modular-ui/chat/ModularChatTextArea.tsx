@@ -14,6 +14,7 @@ import { HighlightDecorator } from "./decorators/HighlightDecorator"
 import { createOverlayDecorator } from "./decorators/OverlayDecorator"
 import { createActionDecorator } from "./decorators/ActionDecorator"
 import Thumbnails from "@/shared/ui/Thumbnails"
+import { SKIP_REST_LABEL, SKIP_REST_TOOLTIP } from "./utils/stepChain"
 
 import type { TaskStatus } from "@shared/ExtensionMessage"
 import type { OpenaiReasoningEffort } from "@shared/ExtensionMessage"
@@ -49,6 +50,8 @@ interface ModularChatTextAreaProps {
 	selectedImages?: string[]
 	setSelectedImages?: React.Dispatch<React.SetStateAction<string[]>>
 	sendingDisabled?: boolean
+	/** A permission card in a chain waits: the send button becomes "Skip rest" and works with an empty box. */
+	skipRest?: boolean
 	taskStatus?: TaskStatus
 	onHeightChange?: (height: number) => void
 	className?: string
@@ -84,6 +87,7 @@ export const ModularChatTextArea: React.FC<ModularChatTextAreaProps> = ({
 	selectedImages,
 	setSelectedImages,
 	sendingDisabled,
+	skipRest = false,
 	taskStatus,
 	onHeightChange,
 	onSend,
@@ -187,13 +191,19 @@ export const ModularChatTextArea: React.FC<ModularChatTextAreaProps> = ({
 	}, [context, modeSwitchingDisabled, modeTrait])
 	useShortcut(platform.togglePlanActKeys, handleModeToggleWithInput, { disableTextInputs: false })
 
+	const hasContent =
+		context.inputValue.trim().length > 0 || context.selectedImages.length > 0 || context.selectedFiles.length > 0
+	// Empty box: only the Skip rest button sends; Enter never skips by accident.
+	const sendButtonDisabled = !!sendingDisabled || (!hasContent && !skipRest)
+	const inputPadding = skipRest ? "10px 80px 10px 12px" : "10px 32px 10px 12px"
+
 	const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			// Check if any trait handled it first (e.g. menu selection)
 			if (handleKeyDown(e)) return
 
 			e.preventDefault()
-			if (!sendingDisabled) {
+			if (!sendingDisabled && hasContent) {
 				onSend?.()
 			}
 			return
@@ -205,7 +215,9 @@ export const ModularChatTextArea: React.FC<ModularChatTextAreaProps> = ({
 		<div className={cn("relative flex flex-col w-full", className)} onDrop={handleDrop}>
 			<div className="modular-composer relative rounded-(--radius-input) transition-all duration-200">
 				{/* Highlight Layer */}
-				<div className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words p-[10px_32px_10px_12px] vscode-editor-font text-transparent">
+				<div
+					className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words vscode-editor-font text-transparent"
+					style={{ padding: inputPadding }}>
 					{decorators.map((d) => (
 						<React.Fragment key={`highlight-${d.id}`}>
 							{d.renderHighlight?.(context.inputValue, context)}
@@ -237,7 +249,7 @@ export const ModularChatTextArea: React.FC<ModularChatTextAreaProps> = ({
 					data-testid="chat-input"
 					placeholder={placeholder}
 					style={{
-						padding: "10px 32px 10px 12px",
+						padding: inputPadding,
 					}}
 				/>
 
@@ -245,17 +257,26 @@ export const ModularChatTextArea: React.FC<ModularChatTextAreaProps> = ({
 				<div className="absolute flex items-end bottom-4.5 right-5 z-10 h-8">
 					<div className="flex flex-row items-center">
 						<motion.div
-							className={cn("input-icon-button", { disabled: sendingDisabled }, "codicon codicon-send text-sm")}
+							aria-disabled={sendButtonDisabled}
+							aria-label={skipRest ? SKIP_REST_LABEL : "Send"}
+							className={cn(
+								"input-icon-button",
+								{ disabled: sendButtonDisabled },
+								skipRest ? "text-xs whitespace-nowrap" : "codicon codicon-send text-sm",
+							)}
 							data-testid="send-button"
+							role="button"
+							title={skipRest ? SKIP_REST_TOOLTIP : undefined}
 							onClick={() => {
-								if (!sendingDisabled) {
+								if (!sendButtonDisabled) {
 									context.setIsFocused(false)
 									onSend?.()
 								}
 							}}
 							whileHover={{ scale: 1.1 }}
-							whileTap={{ scale: 0.9 }}
-						/>
+							whileTap={{ scale: 0.9 }}>
+							{skipRest && SKIP_REST_LABEL}
+						</motion.div>
 					</div>
 				</div>
 			</div>

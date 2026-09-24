@@ -568,6 +568,11 @@ describe("LifecycleManager", () => {
 			sinon.assert.calledOnce(deps.diffViewProvider.revertChanges)
 		})
 
+		it("closes the review tab on cancel without throwing, even with a card left waiting", async () => {
+			await manager.abortTask()
+			sinon.assert.calledOnce(deps.diffViewProvider.closeReview)
+		})
+
 		it("releases task lock if acquired", async () => {
 			deps.taskState.taskLockAcquired = true
 			const lockModule = require("../TaskLockUtils")
@@ -706,7 +711,7 @@ function createMockDeps(): any {
 		terminalManager: { disposeAll: sinon.stub() } as any,
 		urlContentFetcher: { closeBrowser: sinon.stub() } as any,
 		browserSession: { dispose: sinon.stub().resolves() } as any,
-		diffViewProvider: { revertChanges: sinon.stub().resolves() } as any,
+		diffViewProvider: { revertChanges: sinon.stub().resolves(), closeReview: sinon.stub().resolves() } as any,
 		fileContextTracker: {
 			dispose: sinon.stub(),
 			retrieveAndClearPendingFileContextWarning: sinon.stub().resolves(null),

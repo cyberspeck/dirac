@@ -1,4 +1,4 @@
-import { Mode } from "@shared/ExtensionMessage"
+import { DiracMessageType, Mode } from "@shared/ExtensionMessage"
 import React, { useEffect, useMemo } from "react"
 import { useMount } from "react-use"
 import { useAppStore } from "@/app/store/appStore"
@@ -10,13 +10,14 @@ import { useSettingsStore } from "@/features/settings/store/settingsStore"
 import { cn } from "@/lib/utils"
 import { Navbar } from "@/shared/ui/Navbar"
 import { ChatLayout } from "./components/ChatLayout"
-import { InteractionState, useInteractionState } from "./context/InteractionStateContext"
+import { useInteractionState } from "./context/InteractionStateContext"
 // Decorators
 import { ActionButtonsDecorator } from "./decorators/view/ActionButtonsDecorator"
 import { AutoApproveDecorator } from "./decorators/view/AutoApproveDecorator"
 import { useChatState } from "./hooks/useChatState"
 import { useMessageHandlers } from "./hooks/useMessageHandlers"
 import { useScrollBehavior } from "./hooks/useScrollBehavior"
+import { getPlaceholderText, isWaitingPermissionCard } from "./utils/placeholderText"
 import { GoalSection } from "./sections/GoalSection"
 // Sections
 import { InputSection } from "./sections/InputSection"
@@ -74,17 +75,15 @@ export const ModularChatView: React.FC<ChatViewProps> = ({ isHidden, showAnnounc
 
 	const scrollBehavior = useScrollBehavior(messages, renderedMessageIds, renderedMessageIds, expandedRows, setExpandedRows)
 
-	const placeholderText = useMemo(() => {
-		if (goal?.followUpActive) return "Steer this follow-up…"
-		if (goal?.status === "working") return "Steer this Goal…"
-		if (goal?.status === "waiting") return "Steer this Goal while requests await a response…"
-		if (goal?.status === "paused") return "Ask a follow-up (Goal stays paused)…"
-		if (goal?.status === "blocked") return "Ask a follow-up (Goal stays blocked)…"
-		if (goal?.status === "achieved" || goal?.status === "stopped") return "Ask a follow-up…"
-		if (!task) return "Type your task here..."
-		if (interactionState === InteractionState.RUNNING) return "Send guidance for the next turn without interrupting…"
-		return "Type a message..."
-	}, [goal, task, interactionState])
+	const awaitingApproval = useChatStore((state) => {
+		const index = state.uiActionState?.activeCardId ? state.messageIndexById.get(state.uiActionState.activeCardId) : undefined
+		const content = index === undefined ? undefined : state.diracMessages[index]?.content
+		return content?.type === DiracMessageType.CARD && isWaitingPermissionCard(content.card)
+	})
+	const placeholderText = useMemo(
+		() => getPlaceholderText({ goal, hasTask: !!task, interactionState, awaitingApproval }),
+		[goal, task, interactionState, awaitingApproval],
+	)
 
 	const context = useMemo<ChatViewContext>(
 		() => ({

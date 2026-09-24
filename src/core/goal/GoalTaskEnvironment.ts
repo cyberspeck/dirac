@@ -17,6 +17,7 @@ import type {
 } from "@core/task/tools/interfaces/ToolEnvironmentFactory"
 import { SurfaceAdapter } from "@core/task/tools/adapters/SurfaceAdapter"
 import { DelegatingCardHandle } from "@core/task/tools/adapters/DelegatingCardHandle"
+import { buildInteractionTrait } from "@core/task/tools/adapters/traits/UiTraitBuilder"
 import type { TaskConfig } from "@core/task/tools/types/TaskConfig"
 
 export interface GoalChildInteractionResult {
@@ -152,30 +153,9 @@ class GoalChildToolEnvironment implements ToolExecutionEnvironment {
 			},
 			publishState: async () => undefined,
 		}
-		this.interaction = {
-			askPermission: async (message, preview) => {
-				const card = await this.ui.createCard({
-					header: "Permission Request",
-					body: message,
-					requireApproval: true,
-					permissionRequestKind: preview?.manualOnly ? "manual_tool" : "tool",
-					collapsed: false,
-					...(preview?.diffs ? { diffs: preview.diffs, renderType: "diff" as const } : {}),
-					...(preview?.rawInput ? { rawInput: preview.rawInput } : {}),
-				})
-				const result = await card.waitForInteraction()
-				return {
-					approved: result.action === DiracAskResponse.APPROVE,
-					action: result.action,
-					value: result.value,
-					text: result.text,
-					images: result.images,
-					files: result.files,
-					userEdits: result.userEdits,
-					card,
-				}
-			},
-		}
+		// The task's own trait, so a child's permission card gets the same finalize step, permission
+		// kinds and diff review; a private copy here once left the card waiting_for_input.
+		this.interaction = buildInteractionTrait(base.config, (params) => this.ui.createCard(params), () => this.editor)
 		this.responseObserver = observeResponses
 			? {
 				recordResponse: async (response) => {

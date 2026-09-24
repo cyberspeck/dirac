@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert"
 import type { StateManager } from "@core/storage/StateManager"
 import type { ApiConfiguration } from "@shared/api"
 import { describe, it } from "mocha"
-import { recordSuccessfulModelProviderPreset } from "../modelProviderPresets"
+import { recordSavedOpenAiCompatibleProfileChanges, recordSuccessfulModelProviderPreset } from "../modelProviderPresets"
 
 function fakeStateManager(apiConfiguration: ApiConfiguration, globals: Record<string, unknown>) {
 	const state = { apiConfiguration, globals: { modelProviderPresets: [], ...globals } as Record<string, unknown> }
@@ -44,5 +44,20 @@ describe("recordSuccessfulModelProviderPreset", () => {
 
 		assert.equal(state.apiConfiguration.planModeOpenAiProfileName, state.apiConfiguration.openAiCompatibleProfiles?.[0]?.name)
 		assert.equal(state.apiConfiguration.actModeOpenAiProfileName, "other")
+	})
+})
+
+describe("recordSavedOpenAiCompatibleProfileChanges", () => {
+	it("clears a Plan or Act profile name that no saved profile has", () => {
+		const kept = { name: "kept", baseUrl: "http://localhost:1234/v1", modelId: "m", modelInfo }
+		const { state, stateManager } = fakeStateManager(
+			{ openAiCompatibleProfiles: [kept], planModeOpenAiProfileName: "kept", actModeOpenAiProfileName: "deleted" },
+			{},
+		)
+		recordSavedOpenAiCompatibleProfileChanges(stateManager, [kept, { ...kept, name: "deleted" }])
+
+		assert.equal(state.apiConfiguration.planModeOpenAiProfileName, "kept")
+		assert.ok("actModeOpenAiProfileName" in state.apiConfiguration)
+		assert.equal(state.apiConfiguration.actModeOpenAiProfileName, undefined)
 	})
 })

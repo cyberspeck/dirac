@@ -120,6 +120,14 @@ export function recordSavedOpenAiCompatibleProfileChanges(
 	const configuration = stateManager.getApiConfiguration()
 	const profiles = configuration.openAiCompatibleProfiles || []
 	const profilesByName = new Map(profiles.map((profile) => [profile.name, profile]))
+
+	// A mode that still names a deleted profile would fail validation on the next Plan/Act switch.
+	const danglingProfileNames: Partial<ApiConfiguration> = {}
+	for (const key of ["planModeOpenAiProfileName", "actModeOpenAiProfileName"] as const) {
+		const name = configuration[key]
+		if (name && !profilesByName.has(name)) danglingProfileNames[key] = undefined
+	}
+	if (Object.keys(danglingProfileNames).length > 0) stateManager.setApiConfiguration(danglingProfileNames)
 	const presets = stateManager.getGlobalSettingsKey("modelProviderPresets")
 	const reconciledPresets = presets.filter((preset) => {
 		if (preset.provider !== "openai" || !preset.openAiProfileName) return true

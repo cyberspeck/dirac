@@ -12,6 +12,30 @@ let pendingPersistenceOperations = 0
 let nextApiConfigurationRevision = 0
 const apiConfigurationFieldRevisions = new Map<keyof ApiConfiguration, number>()
 
+type ModeFieldPair = { plan: keyof ApiConfiguration; act: keyof ApiConfiguration }
+
+/**
+ * Builds the patch for mode-specific fields: only the current mode's keys when Plan and Act are configured
+ * separately, otherwise both modes' keys, so the two modes cannot drift apart.
+ */
+export function modeFieldUpdates<T extends Record<string, any>>(
+	fieldPairs: { [K in keyof T]: ModeFieldPair },
+	values: T,
+	currentMode: Mode,
+	planActSeparateModelsSetting: boolean,
+): Partial<ApiConfiguration> {
+	const updates: Partial<ApiConfiguration> = {}
+	Object.entries(fieldPairs).forEach(([key, { plan, act }]) => {
+		if (planActSeparateModelsSetting) {
+			updates[currentMode === "plan" ? plan : act] = values[key]
+		} else {
+			updates[plan] = values[key]
+			updates[act] = values[key]
+		}
+	})
+	return updates
+}
+
 export const useApiConfigurationHandlers = () => {
 	const planActSeparateModelsSetting = useSettingsStore((state) => state.planActSeparateModelsSetting)
 
@@ -128,21 +152,11 @@ export const useApiConfigurationHandlers = () => {
 
 	const handleModeFieldsChange = useCallback(
 		async <T extends Record<string, any>>(
-			fieldPairs: { [K in keyof T]: { plan: keyof ApiConfiguration; act: keyof ApiConfiguration } },
+			fieldPairs: { [K in keyof T]: ModeFieldPair },
 			values: T,
 			currentMode: Mode,
-		): Promise<boolean> => {
-			const updates: Partial<ApiConfiguration> = {}
-			Object.entries(fieldPairs).forEach(([key, { plan, act }]) => {
-				if (planActSeparateModelsSetting) {
-					updates[currentMode === "plan" ? plan : act] = values[key]
-				} else {
-					updates[plan] = values[key]
-					updates[act] = values[key]
-				}
-			})
-			return handleFieldsChange(updates)
-		},
+		): Promise<boolean> =>
+			handleFieldsChange(modeFieldUpdates(fieldPairs, values, currentMode, planActSeparateModelsSetting)),
 		[handleFieldsChange, planActSeparateModelsSetting],
 	)
 

@@ -21,7 +21,7 @@ interface QwenCodeProviderProps {
  */
 export const QwenCodeProvider = ({ showModelOptions, isPopup, currentMode }: QwenCodeProviderProps) => {
 	const { apiConfiguration } = useSettingsStore()
-	const { handleFieldChange } = useApiConfigurationHandlers()
+	const { handleFieldChange, handleModeFieldChange } = useApiConfigurationHandlers()
 
 	// Get the normalized configuration
 	const { selectedModelId, selectedModelInfo } = normalizeApiConfiguration(apiConfiguration, currentMode)
@@ -71,10 +71,9 @@ export const QwenCodeProvider = ({ showModelOptions, isPopup, currentMode }: Qwe
 					<ModelSelector
 						label="Model"
 						models={qwenCodeModels}
-						onChange={(modelId: string) => {
-							const fieldName = currentMode === "plan" ? "planModeApiModelId" : "actModeApiModelId"
-							handleFieldChange(fieldName, modelId)
-						}}
+						onChange={(modelId: string) =>
+							handleModeFieldChange({ plan: "planModeApiModelId", act: "actModeApiModelId" }, modelId, currentMode)
+						}
 						selectedModelId={selectedModelId}
 					/>
 

@@ -60,9 +60,12 @@ function resolveOpenAiProfile(
 		headers: configuration.openAiHeaders,
 		azureApiVersion: configuration.azureApiVersion,
 	}
+	const separateModes = stateManager.getGlobalSettingsKey("planActSeparateModelsSetting")
 	stateManager.setApiConfiguration({
 		openAiCompatibleProfiles: [...profiles, profile],
-		[mode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]: name,
+		...(separateModes
+			? { [mode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]: name }
+			: { planModeOpenAiProfileName: name, actModeOpenAiProfileName: name }),
 	})
 	return name
 }

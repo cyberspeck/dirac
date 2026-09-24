@@ -372,13 +372,16 @@ describe("ReadFileToolHandler.execute – include_anchors visibility and cache",
 		const startOnly = (await handler.execute(config, makeBlock(realFile, { start_line: 3 }))) as string
 		assert.ok(startOnly.includes("three\nfour"))
 		assert.ok(!startOnly.includes("one\ntwo"))
+		assert.ok(startOnly.includes("[Lines: 3-4 of 4]\nthree\nfour"))
 
 		const endOnly = (await handler.execute(config, makeBlock(realFile, { end_line: 2 }))) as string
 		assert.ok(endOnly.includes("one\ntwo"))
 		assert.ok(!endOnly.includes("three"))
+		assert.ok(endOnly.includes("[Lines: 1-2 of 4]\none\ntwo"))
 
 		const pastEof = (await handler.execute(config, makeBlock(realFile, { start_line: 3, end_line: 99 }))) as string
 		assert.ok(pastEof.includes("three\nfour"))
+		assert.ok(pastEof.includes("[Lines: 3-4 of 4]\nthree\nfour"))
 	})
 
 	it("rejects negative, nonnumeric, reversed, and past-EOF ranges", async () => {
@@ -519,6 +522,7 @@ describe("ReadFileToolHandler.execute – include_anchors visibility and cache",
 			config,
 			makeBlock(realFile, { start_line: 2, end_line: 2, include_anchors: true }),
 		)) as string
+		assert.ok(result.includes("[Lines: 2-2 of 3]\n"))
 		assert.ok(/^[A-Z][a-zA-Z]*§second$/m.test(result))
 		assert.ok(!/§first$/m.test(result))
 		assert.ok(!/§third$/m.test(result))
@@ -653,7 +657,7 @@ describe("ReadFileToolHandler.execute – include_anchors visibility and cache",
 
 		assert.ok(first.includes(`record ${MAX_ANCHORED_FILE_LINES}:`))
 		assert.ok(first.includes(`record ${MAX_ANCHORED_FILE_LINES + 1}:`))
-		assert.ok(first.includes(`[Total lines: ${MAX_ANCHORED_FILE_LINES + 1}]`))
+		assert.ok(first.includes(`[Lines: ${MAX_ANCHORED_FILE_LINES}-${MAX_ANCHORED_FILE_LINES + 1} of ${MAX_ANCHORED_FILE_LINES + 1}]`))
 		assert.ok(first.includes("Hash anchoring unavailable"))
 		assert.ok(first.includes("use execute_command"))
 		assert.ok(!/^[A-Z][a-zA-Z]*§record/m.test(first))

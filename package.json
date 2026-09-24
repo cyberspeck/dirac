@@ -2,7 +2,7 @@
     "name": "dirac",
     "displayName": "Dirac (local-model build)",
     "description": "A VS Code agent for writing and editing your own files with a model running locally via Ollama. Shell and browser disabled; every finished task auto-committed to git.",
-    "version": "0.5.15-local.3",
+    "version": "0.5.16",
     "icon": "assets/icons/icon.png",
     "workspaces": [
         ".",

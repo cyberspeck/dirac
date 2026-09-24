@@ -45,7 +45,7 @@ export const execute_command_spec: DiracToolSpec = {
 	id: DiracDefaultTool.BASH,
 	name: "execute_command",
 	description:
-		"Executes CLI commands or scripts. Provide exactly one of `commands` or `script`. Use `commands` for simple command sequences and `script` for complex multi-line logic or data processing. Scripts have full access to the filesystem and environment. In multi-root workspaces, prefix commands with `@workspace:`.",
+		"Executes CLI commands or scripts. Provide exactly one of `commands` or `script`. Use `commands` for simple command sequences and `script` for complex multi-line logic or data processing. Scripts have full access to the filesystem and environment. When scripting exact file edits, check boundary bytes and preserve surrounding whitespace: deleting a complete line includes its terminating newline, not only its visible characters. In multi-root workspaces, prefix commands with `@workspace:`.",
 	parameters: [
 		{
 			name: "commands",

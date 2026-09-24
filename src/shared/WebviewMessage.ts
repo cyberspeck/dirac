@@ -25,6 +25,10 @@ export enum DiracAskResponse {
 	UNDO = "undo",
 }
 
+// Sent as `responseType: MESSAGE, value: SKIP_REST_VALUE` (empty text) to decline the current
+// tool call and every remaining call in the turn, then hand the turn back to the model.
+export const SKIP_REST_VALUE = "skip_rest"
+
 export type DiracCheckpointRestore = "task" | "workspace" | "taskAndWorkspace"
 
 export type TaskFeedbackType = "thumbs_up" | "thumbs_down"

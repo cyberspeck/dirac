@@ -183,4 +183,8 @@ export class TaskState {
 	// Note typed alongside an Accept/Reject on a permission card. Consumed once
 	// by ToolExecutorCoordinator, which appends it to the tool result.
 	pendingCardNote?: string
+
+	// Per-turn counters for the "This turn: applied …; declined …; skipped …" summary.
+	// Reset once per assistant message in resetStreamingState.
+	turnOutcomes: { applied: number; declined: number; skipped: number } = { applied: 0, declined: 0, skipped: 0 }
 }

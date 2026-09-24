@@ -17,7 +17,7 @@ import {
 	TaskStatus,
 } from "@shared/ExtensionMessage"
 import { Logger } from "@shared/services/Logger"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
 import pWaitFor from "p-wait-for"
 import { getTaskHookModelContext } from "./runtime/TaskRuntimeModelContext"
 import { TaskMessengerDependencies } from "./types/task-messenger"
@@ -322,6 +322,13 @@ export class TaskMessenger implements ITaskMessenger {
 						if (note && (result.response === DiracAskResponse.APPROVE || result.response === DiracAskResponse.REJECT)) {
 							this.dependencies.taskState.pendingCardNote = note
 						}
+						if (!autoApproved) {
+							if (result.response === DiracAskResponse.APPROVE) {
+								this.dependencies.taskState.turnOutcomes.applied++
+							} else if (result.response === DiracAskResponse.REJECT) {
+								this.dependencies.taskState.turnOutcomes.declined++
+							}
+						}
 						// Clean up ALL response fields to prevent stale data
 						this.dependencies.taskState.askResponse = undefined
 						this.dependencies.taskState.askResponseText = undefined
@@ -339,9 +346,13 @@ export class TaskMessenger implements ITaskMessenger {
 						const responseFiles = result.files as string[] | undefined
 						const hasUserMessageContent =
 							!!responseText || (responseImages?.length ?? 0) > 0 || (responseFiles?.length ?? 0) > 0
-						if (result.response === DiracAskResponse.MESSAGE && hasUserMessageContent) {
-							// Echo the user's message in the chat UI
-							await this.upsertText(responseText ?? "", false, responseImages, responseFiles, "user")
+						const isSkipRest = result.value === SKIP_REST_VALUE
+						if (result.response === DiracAskResponse.MESSAGE && (hasUserMessageContent || isSkipRest)) {
+							this.dependencies.taskState.turnOutcomes.skipped++
+							if (hasUserMessageContent) {
+								// Echo the user's message in the chat UI
+								await this.upsertText(responseText ?? "", false, responseImages, responseFiles, "user")
+							}
 							const { ToolSkippedByUserMessage } = await import("./tools/types/ToolSkippedByUserMessage")
 							throw new ToolSkippedByUserMessage(responseText ?? "", responseImages, responseFiles)
 						}

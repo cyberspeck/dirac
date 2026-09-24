@@ -22,6 +22,16 @@ export const formatResponse = {
 
 	userNote: (note: string) => ` The user wrote: "${note}"`,
 
+	toolSkippedByUser: (text?: string) =>
+		text
+			? `Not applied — the user declined this and wrote: "${text}" Answer the user now, then continue only if still wanted.`
+			: `Not applied — the user skipped this and the remaining steps.`,
+
+	toolSkippedRest: () => `Not run — the user skipped the rest of this turn.`,
+
+	turnSummary: (c: { applied: number; declined: number; skipped: number }) =>
+		`This turn: applied ${c.applied}; declined ${c.declined}; skipped ${c.skipped}.`,
+
 	toolDeniedWithFeedback: (feedback: string) =>
 		`The user denied this operation and provided the following feedback:\n<feedback>\n${feedback}\n</feedback>`,
 

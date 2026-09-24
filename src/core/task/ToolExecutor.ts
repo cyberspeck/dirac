@@ -41,7 +41,6 @@ import { ToolSnapshotManager } from "./tools/runtime/ToolSnapshotManager"
 import { ToolExecutorCoordinator } from "./tools/ToolExecutorCoordinator"
 import type { ToolEnvironmentFactory } from "./tools/interfaces/ToolEnvironmentFactory"
 import { type SubagentRuntime, TaskConfig, validateTaskConfig } from "./tools/types/TaskConfig"
-import { ToolDisplayUtils } from "./tools/utils/ToolDisplayUtils"
 import type { TaskExecutionProfile } from "./TaskExecutionProfile"
 import { isDiscoveredToolAvailableToTaskProfile } from "./TaskExecutionProfile"
 
@@ -445,23 +444,14 @@ export class ToolExecutor {
 		return ToolExecutor.PLAN_MODE_RESTRICTED_TOOLS.includes(toolName)
 	}
 
-	private createToolRejectionMessage(block: ToolUse, reason: string): void {
-		this.taskState.userMessageContent.push({
-			type: "text",
-			text: `${reason} ${ToolDisplayUtils.getToolDescription(block, this.coordinator)}`,
-		})
-	}
-
 	private async execute(block: ToolUse, isComplete = true): Promise<boolean> {
 		try {
 			canonicalizeResponseToolCall(block, isComplete)
 			if (!this.coordinator.has(block.name)) return false
 			const config = this.asToolConfig()
 			if (this.taskState.didRejectTool) {
-				const reason = !isComplete
-					? "Tool was interrupted and not executed due to user rejecting a previous tool."
-					: "Skipping tool due to user rejecting a previous tool."
-				this.createToolRejectionMessage(block, reason)
+				await this.resultPusher.pushToolResult(formatResponse.toolSkippedRest(), block)
+				this.taskState.turnOutcomes.skipped++
 				return true
 			}
 			if (await this.isPlanModeRestricted(block, isComplete)) return true

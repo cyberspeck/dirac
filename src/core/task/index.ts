@@ -1332,6 +1332,7 @@ export class Task {
 		this.taskState.didRejectTool = false
 		this.taskState.didAlreadyUseTool = false
 		this.taskState.pendingCardNote = undefined
+		this.taskState.turnOutcomes = { applied: 0, declined: 0, skipped: 0 }
 		await this.diffViewProvider.reset()
 		this.streamHandler.reset()
 		this.taskState.toolUseIdMap.clear()

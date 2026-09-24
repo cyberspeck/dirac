@@ -158,7 +158,6 @@ export class ToolExecutorCoordinator {
 
 			if (error instanceof ToolSkippedByUserMessage) {
 				config.taskState.consecutiveMistakeCount = initialMistakeCount
-				config.taskState.pendingUserMessage = error.userMessage
 				config.taskState.pendingUserImages = error.userImages
 				config.taskState.pendingUserFiles = error.userFiles
 
@@ -169,7 +168,7 @@ export class ToolExecutorCoordinator {
 				}
 
 				env.telemetry.captureCustomMetadata({ skippedByUser: true, userMessageLength: error.userMessage.length })
-				response = `[Tool '${block.name}' skipped by user with message: "${error.userMessage}"]`
+				response = formatResponse.toolSkippedByUser(error.userMessage || undefined)
 			} else {
 				executionError = error instanceof Error ? error : new Error(String(error))
 				config.taskState.consecutiveMistakeCount = initialMistakeCount + 1

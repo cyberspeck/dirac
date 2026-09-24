@@ -320,8 +320,9 @@ export class TaskMessenger implements ITaskMessenger {
 							askTs: messageTs,
 						}
 						// The note typed with Accept/Reject is appended to the tool result once, by the coordinator.
-						// Only tool permission cards: cards with their own actions (API retry) are not tool calls.
-						const isToolPermission = !getCard().actions?.length
+						// Only tool permission cards (Accept/Reject): cards with their own actions (API retry,
+						// question options) are not tool steps.
+						const isToolPermission = !!getCard().requireApproval && !getCard().actions?.length
 						const note = (result.text as string | undefined)?.trim()
 						if (
 							isToolPermission &&

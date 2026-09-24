@@ -373,6 +373,20 @@ describe("TaskMessenger text authorship", () => {
 		assert.equal(taskState.turnOutcomes.applied, 0)
 	})
 
+	it("sets no note and counts nothing for a Reject with text on a question card", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({ header: "Question", requireFeedback: true })
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.REJECT
+		taskState.askResponseText = "later"
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, undefined)
+		assert.equal(taskState.turnOutcomes.declined, 0)
+	})
+
 	it("counts a manual Approve as applied and a manual Reject as declined", async () => {
 		const { messenger, taskState } = createMessenger()
 

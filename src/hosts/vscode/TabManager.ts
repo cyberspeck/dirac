@@ -119,9 +119,7 @@ export class TabManager {
 
 	static async closeReviewTabs(): Promise<void> {
 		try {
-			const tabs = vscode.window.tabGroups.all
-				.flatMap((tg) => tg.tabs)
-				.filter((tab) => tab.label === "Review Dirac Edits")
+			const tabs = vscode.window.tabGroups.all.flatMap((tg) => tg.tabs).filter((tab) => tab.label === "Review Dirac Edits")
 
 			if (tabs.length === 0) {
 				return

@@ -1,5 +1,6 @@
 import "should"
 import { CardStatus, DiracMessage, DiracMessageType, TaskStatus, UIActionButtonType } from "@shared/ExtensionMessage"
+import { DiracAskResponse } from "@shared/WebviewMessage"
 import { TaskState } from "../TaskState"
 import { projectUIActionState } from "./ui-projector"
 
@@ -177,6 +178,25 @@ describe("projectUIActionState", () => {
 		it("is absent for cards without requireApproval", () => {
 			const state = permissionState(["write_to_file", "edit_file"], 1, true)
 			const messages = card({ requireFeedback: true })
+			;(projectUIActionState(state, messages, 3).chainPosition === undefined).should.be.true()
+		})
+
+		it("does not count respond or new_task: an edit followed by respond is a single step", () => {
+			const complete = permissionState(["edit_file", "respond"], 1, true)
+			;(projectUIActionState(complete, card(), 3).chainPosition === undefined).should.be.true()
+			const handoff = permissionState(["edit_file", "new_task"], 1, true)
+			;(projectUIActionState(handoff, card(), 3).chainPosition === undefined).should.be.true()
+		})
+
+		it("is absent for a card with its own actions (API retry)", () => {
+			const state = permissionState(["write_to_file", "edit_file"], 1, true)
+			const messages = card({
+				requireApproval: true,
+				actions: [
+					{ label: "Retry", value: DiracAskResponse.APPROVE, primary: true },
+					{ label: "Cancel", value: DiracAskResponse.REJECT },
+				],
+			})
 			;(projectUIActionState(state, messages, 3).chainPosition === undefined).should.be.true()
 		})
 

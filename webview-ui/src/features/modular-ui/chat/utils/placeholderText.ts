@@ -1,6 +1,10 @@
-import type { ExtensionState } from "@shared/ExtensionMessage"
+import { type Card, type ExtensionState, isFinalStatus } from "@shared/ExtensionMessage"
 import { InteractionState } from "../context/InteractionStateContext"
 import { APPROVAL_PLACEHOLDER } from "./stepChain"
+
+/** A tool permission card (Accept/Reject) that still waits; cards with their own actions (API retry) are not. */
+export const isWaitingPermissionCard = (card: Pick<Card, "requireApproval" | "actions" | "status">): boolean =>
+	!!card.requireApproval && !card.actions?.length && !isFinalStatus(card.status)
 
 export function getPlaceholderText(params: {
 	goal?: ExtensionState["goal"]

@@ -1,4 +1,4 @@
-import { DiracMessageType, isFinalStatus, Mode } from "@shared/ExtensionMessage"
+import { DiracMessageType, Mode } from "@shared/ExtensionMessage"
 import React, { useEffect, useMemo } from "react"
 import { useMount } from "react-use"
 import { useAppStore } from "@/app/store/appStore"
@@ -17,7 +17,7 @@ import { AutoApproveDecorator } from "./decorators/view/AutoApproveDecorator"
 import { useChatState } from "./hooks/useChatState"
 import { useMessageHandlers } from "./hooks/useMessageHandlers"
 import { useScrollBehavior } from "./hooks/useScrollBehavior"
-import { getPlaceholderText } from "./utils/placeholderText"
+import { getPlaceholderText, isWaitingPermissionCard } from "./utils/placeholderText"
 import { GoalSection } from "./sections/GoalSection"
 // Sections
 import { InputSection } from "./sections/InputSection"
@@ -78,7 +78,7 @@ export const ModularChatView: React.FC<ChatViewProps> = ({ isHidden, showAnnounc
 	const awaitingApproval = useChatStore((state) => {
 		const index = state.uiActionState?.activeCardId ? state.messageIndexById.get(state.uiActionState.activeCardId) : undefined
 		const content = index === undefined ? undefined : state.diracMessages[index]?.content
-		return content?.type === DiracMessageType.CARD && !!content.card.requireApproval && !isFinalStatus(content.card.status)
+		return content?.type === DiracMessageType.CARD && isWaitingPermissionCard(content.card)
 	})
 	const placeholderText = useMemo(
 		() => getPlaceholderText({ goal, hasTask: !!task, interactionState, awaitingApproval }),

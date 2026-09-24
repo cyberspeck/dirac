@@ -1331,6 +1331,7 @@ export class Task {
 		this.taskState.userMessageContentReady = false
 		this.taskState.didRejectTool = false
 		this.taskState.didAlreadyUseTool = false
+		this.taskState.activeToolBlockIndex = undefined
 		this.taskState.pendingCardNote = undefined
 		this.taskState.turnOutcomes = { applied: 0, declined: 0, skipped: 0 }
 		await this.diffViewProvider.reset()

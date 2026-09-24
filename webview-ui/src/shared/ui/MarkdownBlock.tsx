@@ -193,7 +193,7 @@ const ActModeHighlight: React.FC = () => {
 						TogglePlanActModeRequest.create({
 							mode: PlanActMode.ACT,
 						}),
-					)
+					).catch(console.error)
 				}
 			}}
 			title={

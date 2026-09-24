@@ -60,6 +60,8 @@ export class TaskState {
 	// True while the currently-waiting card is a `respond` question card, whose typed
 	// text is the answer, not a skip. Set in TaskMessenger.waitForInteraction.
 	waitingCardAcceptsText = false
+	// Index into assistantMessageContent of the tool_use block being executed (set by the presenter).
+	activeToolBlockIndex?: number
 	waitingCardIds: string[] = []
 	get lastWaitingCardId(): string | undefined {
 		return this.waitingCardIds[0]

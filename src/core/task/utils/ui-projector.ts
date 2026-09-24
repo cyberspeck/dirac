@@ -9,6 +9,7 @@ import {
 	UIActionState,
 } from "@shared/ExtensionMessage"
 import { isBusyTaskStatus } from "@shared/taskStatusProjection"
+import { READ_ONLY_TOOLS } from "@shared/tools"
 import { DiracAskResponse } from "@shared/WebviewMessage"
 import { TaskState } from "../TaskState"
 
@@ -45,10 +46,11 @@ export function projectUIActionState(
 				card.actions?.map(mapCardActionToUIButton) ||
 				(card.requireApproval
 					? [
-						{ label: "Approve", action: UIActionButtonType.APPROVE, primary: true },
+						{ label: "Accept", action: UIActionButtonType.APPROVE, primary: true },
 						{ label: "Reject", action: UIActionButtonType.REJECT, style: "secondary" },
 					]
 					: [])
+			if (card.requireApproval) uiState.chainPosition = projectChainPosition(state)
 			return uiState
 		}
 	}
@@ -96,6 +98,27 @@ export function projectUIActionState(
 	}
 
 	return uiState
+}
+
+// Position of the executing tool call among the message's counted (non-read-only) calls.
+// Omitted for a lone call once the stream is complete: there is no chain to skip.
+function projectChainPosition(state: TaskState): UIActionState["chainPosition"] {
+	const active = state.activeToolBlockIndex
+	if (active === undefined) return undefined
+	const counted = (i: number) => {
+		const block = state.assistantMessageContent[i]
+		return block?.type === "tool_use" && !(READ_ONLY_TOOLS as readonly string[]).includes(block.name)
+	}
+	let index = 0
+	let total = 0
+	for (let i = 0; i < state.assistantMessageContent.length; i++) {
+		if (!counted(i)) continue
+		total++
+		if (i <= active) index++
+	}
+	const streaming = !state.didCompleteReadingStream
+	if (!counted(active) || (total < 2 && !streaming)) return undefined
+	return { index, total, streaming }
 }
 
 function mapCardActionToUIButton(action: ActionButton): UIActionButton {

@@ -447,6 +447,10 @@ export interface UIActionState {
 
 	/** Whether the main chat input should be locked */
 	sendingDisabled: boolean
+
+	/** Position of the waiting permission card among the message's counted (non-read-only) tool calls.
+	 * Present only while the message has at least 2 of them or is still streaming. */
+	chainPosition?: { index: number; total: number; streaming: boolean }
 }
 
 export interface CardDiff {

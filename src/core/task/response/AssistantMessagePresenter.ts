@@ -126,6 +126,7 @@ export class AssistantMessagePresenter {
 		await this.deps.postStateToWebview()
 		await this.deps.assistantStreamManager.pauseForToolCall()
 		await this.awaitCheckpointIfNeeded(block)
+		this.deps.taskState.activeToolBlockIndex = this.currentStreamingContentIndex
 		await this.deps.toolExecutor.executeTool(block, isBlockComplete)
 		if (block.call_id) Session.get().updateToolCall(block.call_id, block.name)
 	}

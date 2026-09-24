@@ -18,7 +18,17 @@ import { ModelAutocomplete } from "../common/ModelAutocomplete"
 import { ModelInfoView } from "../common/ModelInfoView"
 import ReasoningEffortSelector from "../ReasoningEffortSelector"
 import { parsePrice } from "../utils/pricingUtils"
-import { useApiConfigurationHandlers } from "../utils/useApiConfigurationHandlers"
+import { modeFieldUpdates, useApiConfigurationHandlers } from "../utils/useApiConfigurationHandlers"
+
+const PROFILE_NAME_FIELDS = {
+	profileName: { plan: "planModeOpenAiProfileName", act: "actModeOpenAiProfileName" },
+} as const
+
+const PROFILE_SELECTION_FIELDS = {
+	...PROFILE_NAME_FIELDS,
+	modelId: { plan: "planModeOpenAiModelId", act: "actModeOpenAiModelId" },
+	modelInfo: { plan: "planModeOpenAiModelInfo", act: "actModeOpenAiModelInfo" },
+} as const
 
 /**
  * Props for the OpenAICompatibleProvider component
@@ -33,7 +43,8 @@ interface OpenAICompatibleProviderProps {
  * The OpenAI Compatible provider configuration component
  */
 export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMode }: OpenAICompatibleProviderProps) => {
-	const { apiConfiguration, remoteConfigSettings, openAiModels, refreshOpenAiModels } = useSettingsStore()
+	const { apiConfiguration, remoteConfigSettings, openAiModels, refreshOpenAiModels, planActSeparateModelsSetting } =
+		useSettingsStore()
 	const { handleFieldChange, handleModeFieldChange, handleModeFieldsChange, handleFieldsChange } = useApiConfigurationHandlers()
 
 	const [modelConfigurationSelected, setModelConfigurationSelected] = useState(false)
@@ -64,6 +75,18 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 	const profiles = apiConfiguration?.openAiCompatibleProfiles || []
 	const currentProfile = profiles.find((p: OpenAiCompatibleProfile) => p.name === currentProfileName)
 
+	// Without separate Plan/Act models, a profile change applies to both modes; otherwise the other mode
+	// could keep pointing at a profile that was since replaced or deleted.
+	const profileNameUpdates = (profileName: string | undefined) =>
+		modeFieldUpdates(PROFILE_NAME_FIELDS, { profileName }, currentMode, planActSeparateModelsSetting)
+	const profileSelectionUpdates = (profile: OpenAiCompatibleProfile) =>
+		modeFieldUpdates(
+			PROFILE_SELECTION_FIELDS,
+			{ profileName: profile.name, modelId: profile.modelId, modelInfo: profile.modelInfo },
+			currentMode,
+			planActSeparateModelsSetting,
+		)
+
 	const persistOpenAiHeaders = (headers: Record<string, string>) => {
 		if (!currentProfileName || !currentProfile) return handleFieldChange("openAiHeaders", headers)
 
@@ -90,10 +113,7 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 				openAiApiKey: profile.apiKey,
 				openAiHeaders: profile.headers,
 				azureApiVersion: profile.azureApiVersion,
-				...(currentMode === "plan"
-					? { planModeOpenAiModelId: profile.modelId, planModeOpenAiModelInfo: profile.modelInfo }
-					: { actModeOpenAiModelId: profile.modelId, actModeOpenAiModelInfo: profile.modelInfo }),
-				[currentMode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]: name,
+				...profileSelectionUpdates(profile),
 			})
 			if (!didPersist) return
 			previousProfileNameRef.current = name
@@ -102,9 +122,7 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 	}
 
 	const handleNewProfile = async () => {
-		const didPersist = await handleFieldsChange({
-			[currentMode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]: undefined,
-		})
+		const didPersist = await handleFieldsChange(profileNameUpdates(undefined))
 		if (!didPersist) return
 		previousProfileNameRef.current = currentProfileName
 		setProfileNameInput("")
@@ -134,7 +152,7 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 
 		const didPersist = await handleFieldsChange({
 			openAiCompatibleProfiles: updatedProfiles,
-			[currentMode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]: newProfile.name,
+			...profileNameUpdates(newProfile.name),
 		})
 		if (!didPersist) return
 		previousProfileNameRef.current = newProfile.name
@@ -151,19 +169,13 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 						openAiApiKey: prevProfile.apiKey,
 						openAiHeaders: prevProfile.headers,
 						azureApiVersion: prevProfile.azureApiVersion,
-						...(currentMode === "plan"
-							? { planModeOpenAiModelId: prevProfile.modelId, planModeOpenAiModelInfo: prevProfile.modelInfo }
-							: { actModeOpenAiModelId: prevProfile.modelId, actModeOpenAiModelInfo: prevProfile.modelInfo }),
-						[currentMode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]:
-							previousProfileNameRef.current,
+						...profileSelectionUpdates(prevProfile),
 					})
 					if (!didPersist) return
 					setProfileNameInput(previousProfileNameRef.current)
 				} else {
 					// Fallback if previous profile is gone
-					const didPersist = await handleFieldsChange({
-						[currentMode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]: undefined,
-					})
+					const didPersist = await handleFieldsChange(profileNameUpdates(undefined))
 					if (!didPersist) return
 				}
 			}
@@ -173,7 +185,7 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 		const updatedProfiles = profiles.filter((p: OpenAiCompatibleProfile) => p.name !== currentProfileName)
 		const didPersist = await handleFieldsChange({
 			openAiCompatibleProfiles: updatedProfiles,
-			[currentMode === "plan" ? "planModeOpenAiProfileName" : "actModeOpenAiProfileName"]: undefined,
+			...profileNameUpdates(undefined),
 		})
 		if (!didPersist) return
 		setProfileNameInput("")

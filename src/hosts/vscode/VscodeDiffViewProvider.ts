@@ -161,4 +161,8 @@ export class VscodeDiffViewProvider extends DiffViewProvider {
 		await this.closeAllDiffViews()
 		await this.reset()
 	}
+
+	override async closeReview(): Promise<void> {
+		await TabManager.closeReviewTabs()
+	}
 }

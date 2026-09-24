@@ -728,6 +728,7 @@ export class LifecycleManager {
 		await attempt(() => this.dependencies.diracIgnoreController.dispose())
 		await attempt(() => this.dependencies.fileContextTracker.dispose())
 		await attempt(() => this.dependencies.diffViewProvider.revertChanges())
+		await attempt(() => this.dependencies.diffViewProvider.closeReview())
 		await attempt(() => AnchorStateManager.reset(this.dependencies.ulid))
 
 		return failures

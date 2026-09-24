@@ -343,5 +343,6 @@ export abstract class DiffViewProvider {
 	}
 
 	async hideReview(): Promise<void> {}
+	async closeReview(): Promise<void> {}
 	abstract format(path: string): Promise<string>
 }

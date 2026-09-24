@@ -75,7 +75,7 @@ export class AssistantMessagePresenter {
 				this.lastProcessedContentLength = 0
 			} else break
 		}
-		this.checkAllBlocksProcessed()
+		await this.checkAllBlocksProcessed()
 	}
 
 	// Determine if a block is complete based on its flag and position
@@ -143,10 +143,11 @@ export class AssistantMessagePresenter {
 	}
 
 	// Mark userMessageContentReady when all blocks are processed and stream is done
-	private checkAllBlocksProcessed(): void {
+	private async checkAllBlocksProcessed(): Promise<void> {
 		const allProcessed = this.currentStreamingContentIndex >= this.deps.taskState.assistantMessageContent.length
-		if (allProcessed && this.deps.taskState.didCompleteReadingStream) {
+		if (allProcessed && this.deps.taskState.didCompleteReadingStream && !this.deps.taskState.userMessageContentReady) {
 			this.deps.taskState.userMessageContentReady = true
+			await this.deps.diffViewProvider.closeReview()
 		}
 	}
 }

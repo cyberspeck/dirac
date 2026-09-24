@@ -117,6 +117,20 @@ export class TabManager {
 		}
 	}
 
+	static async closeReviewTabs(): Promise<void> {
+		const tabs = vscode.window.tabGroups.all.flatMap((tg) => tg.tabs).filter((tab) => tab.label === "Review Dirac Edits")
+
+		if (tabs.length === 0) {
+			return
+		}
+
+		try {
+			await vscode.window.tabGroups.close(tabs)
+		} catch (error) {
+			Logger.warn("TabManager: failed to close review tabs", getErrorMessage(error))
+		}
+	}
+
 	static async closeTabsByScheme(scheme: string): Promise<void> {
 		const allTabs = vscode.window.tabGroups.all
 			.flatMap((tg) => tg.tabs)

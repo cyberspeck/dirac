@@ -584,6 +584,15 @@ describe("ResponseProcessor", () => {
 			taskState.userMessageContentReady.should.be.true()
 		})
 
+		it("closes the review tab exactly once when userMessageContentReady flips", async () => {
+			taskState.assistantMessageContent = [{ type: "text", content: "done", isComplete: true, call_id: "t1" } as any]
+			taskState.isApiRequestActive = false
+			taskState.didCompleteReadingStream = true
+			await processor.presentAssistantMessage()
+			await processor.presentAssistantMessage()
+			sinon.assert.calledOnce(deps.diffViewProvider.closeReview)
+		})
+
 		it("awaits initialCheckpointCommitPromise for non-read-only tools", async () => {
 			const checkpointPromise = Promise.resolve("hash")
 			taskState.initialCheckpointCommitPromise = checkpointPromise
@@ -810,6 +819,7 @@ function createMockDeps(taskState: TaskState, streamHandler: StreamResponseHandl
 		},
 		assistantStreamManager: { handleChunk: sinon.stub().resolves(), pauseForToolCall: sinon.stub().resolves() },
 		toolExecutor: { executeTool: sinon.stub().resolves() },
+		diffViewProvider: { closeReview: sinon.stub().resolves() },
 		postStateToWebview: sinon.stub().resolves(),
 		ulid: "test-ulid",
 		taskId: "test-task-id",

@@ -29,6 +29,30 @@ describe("submitCardResponse — Skip rest", () => {
 		assert.equal(ctx.taskState.didRejectTool, true)
 	})
 
+	it("sets didRejectTool for an images-only MESSAGE with no text", async () => {
+		const ctx = context()
+
+		await submitCardResponse(ctx, {
+			cardId: "card-1",
+			response: DiracAskResponse.MESSAGE,
+			images: ["screenshot.png"],
+		})
+
+		assert.equal(ctx.taskState.didRejectTool, true)
+	})
+
+	it("sets didRejectTool for a files-only MESSAGE with no text", async () => {
+		const ctx = context()
+
+		await submitCardResponse(ctx, {
+			cardId: "card-1",
+			response: DiracAskResponse.MESSAGE,
+			files: ["notes.txt"],
+		})
+
+		assert.equal(ctx.taskState.didRejectTool, true)
+	})
+
 	it("does not set didRejectTool for MESSAGE with neither text nor SKIP_REST_VALUE", async () => {
 		const ctx = context()
 

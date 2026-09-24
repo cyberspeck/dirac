@@ -71,11 +71,12 @@ export async function submitCardResponse(
 	ctx.taskState.askResponseFiles = files
 	ctx.taskState.askResponseAction = response as string
 	ctx.taskState.askResponseValue = value
-	// When user sends a text message, or hits Skip rest with an empty box, while a card is
-	// awaiting approval, signal that the tool should be skipped and forward to LLM.
+	// When user sends a text message (or attaches images/files), or hits Skip rest with an
+	// empty box, while a card is awaiting approval, signal that the tool should be skipped
+	// and forward to LLM. Matches the hasUserMessageContent check in TaskMessenger.
 	if (
 		response === DiracAskResponse.MESSAGE &&
-		(text || value === SKIP_REST_VALUE) &&
+		(text || (images?.length ?? 0) > 0 || (files?.length ?? 0) > 0 || value === SKIP_REST_VALUE) &&
 		ctx.taskState.status !== TaskStatus.CANCELLED
 	) {
 		ctx.taskState.didRejectTool = true

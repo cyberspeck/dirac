@@ -45,6 +45,12 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 	const activeCardId = uiActionState?.activeCardId
 	const messageHandlersRef = useRef(messageHandlers)
 	messageHandlersRef.current = messageHandlers
+	const chatStateRef = useRef(chatState)
+	chatStateRef.current = chatState
+	const getInput = useCallback(() => {
+		const { inputValue, selectedImages, selectedFiles } = chatStateRef.current
+		return { text: inputValue, images: selectedImages, files: selectedFiles }
+	}, [])
 	const stableMessageHandlers = useMemo<MessageHandlers>(
 		() => ({
 			executeButtonAction: (...args) => messageHandlersRef.current.executeButtonAction(...args),
@@ -61,6 +67,7 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 				activeCardId={activeCardId}
 				activeVoiceStreamId={activeVoiceStreamId}
 				expandedRows={expandedRows}
+				getInput={getInput}
 				isLastMessage={index === renderedMessageIds.length - 1}
 				messageId={messageId}
 				messageHandlers={stableMessageHandlers}
@@ -72,6 +79,7 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 			activeCardId,
 			activeVoiceStreamId,
 			expandedRows,
+			getInput,
 			renderedMessageIds.length,
 			setActiveQuote,
 			stableMessageHandlers,

@@ -14,6 +14,8 @@ interface MessageRendererProps {
 	messageHandlers: MessageHandlers
 	activeCardId?: string
 	activeVoiceStreamId?: string
+	/** Current input box content; sent as the note with Accept/Reject. */
+	getInput?: () => { text: string; images: string[]; files: string[] }
 }
 
 /** Renders one virtualized protocol message. */
@@ -27,6 +29,7 @@ export const MessageRenderer = memo(
 		messageHandlers,
 		activeCardId,
 		activeVoiceStreamId,
+		getInput,
 	}: MessageRendererProps) => {
 		const message = useChatStore((state) => {
 			const index = state.messageIndexById.get(messageId)
@@ -48,27 +51,29 @@ export const MessageRenderer = memo(
 					onAction={(value, cardId) =>
 						messageHandlers.executeButtonAction("utility", value, undefined, undefined, undefined, cardId)
 					}
-					onApprove={() =>
-						messageHandlers.executeButtonAction(
+					onApprove={() => {
+						const input = getInput?.()
+						return messageHandlers.executeButtonAction(
 							DiracAskResponse.APPROVE,
 							undefined,
-							undefined,
-							undefined,
-							undefined,
+							input?.text,
+							input?.images,
+							input?.files,
 							message.id,
 						)
-					}
+					}}
 					onCancelCommand={() => messageHandlers.executeButtonAction("cancel")}
-					onReject={() =>
-						messageHandlers.executeButtonAction(
+					onReject={() => {
+						const input = getInput?.()
+						return messageHandlers.executeButtonAction(
 							DiracAskResponse.REJECT,
 							undefined,
-							undefined,
-							undefined,
-							undefined,
+							input?.text,
+							input?.images,
+							input?.files,
 							message.id,
 						)
-					}
+					}}
 					onSetQuote={onSetQuote}
 					onToggleExpand={onToggleExpand}
 					sendMessageFromChatRow={messageHandlers.handleSendMessage}

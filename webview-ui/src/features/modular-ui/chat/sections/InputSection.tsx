@@ -12,6 +12,7 @@ import { useSettingsStore } from "@/features/settings/store/settingsStore"
 import { StateServiceClient } from "@/shared/api/grpc-client"
 import QuotedMessagePreview from "@/shared/ui/QuotedMessagePreview"
 import { ModularChatTextArea } from "../ModularChatTextArea"
+import { isSkipRestAvailable } from "../utils/stepChain"
 import { ChatSection, ChatViewContext } from "../types"
 
 const InputSectionContent: React.FC<{ context: ChatViewContext }> = ({ context }) => {
@@ -140,6 +141,7 @@ const InputSectionContent: React.FC<{ context: ChatViewContext }> = ({ context }
 				selectedFiles={selectedFiles}
 				selectedImages={selectedImages}
 				sendingDisabled={chatState.sendingDisabled}
+				skipRest={isSkipRestAvailable(chatState.uiActionState?.chainPosition)}
 				setInputValue={chatState.setInputValue}
 				setSelectedFiles={chatState.setSelectedFiles}
 				setSelectedImages={chatState.setSelectedImages}

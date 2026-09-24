@@ -1,6 +1,6 @@
 import { CardKind, DiracMessageType, isFinalStatus, UIActionButtonType } from "@shared/ExtensionMessage"
 import { getCardKind } from "@shared/cardIdentity"
-import { DiracAskResponse } from "@shared/WebviewMessage"
+import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
 
 import { EmptyRequest, StringRequest } from "@shared/proto/dirac/common"
 import { GoalMessageRequest } from "@shared/proto/dirac/goal"
@@ -12,6 +12,7 @@ import { GoalServiceClient, SlashServiceClient, TaskServiceClient } from "@/shar
 import { InteractionState, useInteractionState } from "../context/InteractionStateContext"
 import type { ButtonActionType } from "../utils/buttonConfig"
 import type { ChatState, MessageHandlers } from "../types/chatTypes"
+import { isSkipRestAvailable } from "../utils/stepChain"
 export function useMessageHandlers(chatState: ChatState): MessageHandlers {
 	const { state: interactionState } = useInteractionState()
 	const backgroundCommandRunning = useSettingsStore((state) => state.backgroundCommandRunning)
@@ -43,7 +44,24 @@ export function useMessageHandlers(chatState: ChatState): MessageHandlers {
 			const messageToSend = text.trim()
 			const hasContent = messageToSend || images.length > 0 || files.length > 0
 
-			if (!hasContent) return
+			if (!hasContent) {
+				// Empty box in a chain: the send button is "Skip rest".
+				if (!isSkipRestAvailable(uiActionState?.chainPosition)) return
+				try {
+					await TaskServiceClient.askResponse(
+						AskResponseRequest.create({
+							cardId: uiActionState?.activeCardId || "",
+							responseType: DiracAskResponse.MESSAGE,
+							text: "",
+							value: SKIP_REST_VALUE,
+						}),
+					)
+					setSendingDisabled(true)
+				} catch (error) {
+					console.error("[ChatView] Failed to skip the rest:", error)
+				}
+				return
+			}
 
 			let finalMessage = messageToSend
 			if (activeQuote) {

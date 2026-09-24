@@ -12,6 +12,8 @@ import { CARD_DECORATORS } from "../decorators"
 import { CardStatusIcon } from "./CardStatusIcon"
 import { SubagentAvatar } from "./SubagentAvatar"
 import { getStatusTextColorClass } from "../utils/cardUtils"
+import { formatStepCounter } from "../chat/utils/stepChain"
+import { useChatStore } from "@/features/chat/store/chatStore"
 import React, { useEffect, useMemo, useState } from "react"
 
 interface ModularCardHeaderProps {
@@ -39,6 +41,9 @@ export const ModularCardHeader: React.FC<ModularCardHeaderProps> = ({
 	const hasHeaderActionDecorator = decorators.some((decorator) => decorator.renderHeaderActions)
 	const iconSizeClass = "size-3.5"
 	const elapsedTime = getSubagentCardElapsedTime(card, currentTime)
+	const chainPosition = useChatStore((state) =>
+		state.uiActionState?.activeCardId === card.id ? state.uiActionState.chainPosition : undefined,
+	)
 
 	useEffect(() => {
 		if (!isSubagentCard || isTerminal || card.startTime === undefined) return
@@ -81,6 +86,10 @@ export const ModularCardHeader: React.FC<ModularCardHeaderProps> = ({
 					<span aria-label={`Subagent runtime ${elapsedTime}`} className="shrink-0 font-mono text-xs font-normal text-muted-foreground">
 						{elapsedTime}
 					</span>
+				)}
+
+				{chainPosition && (
+					<span className="shrink-0 text-xs font-normal text-muted-foreground">{formatStepCounter(chainPosition)}</span>
 				)}
 
 				{status === CardStatus.WAITING_FOR_INPUT && (

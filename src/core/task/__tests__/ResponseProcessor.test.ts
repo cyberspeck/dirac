@@ -341,6 +341,28 @@ describe("ResponseProcessor", () => {
 			taskState.didCompleteReadingStream.should.be.true()
 		})
 
+		it("posts state once the stream completes while a card still waits", async () => {
+			taskState.assistantMessageContent = [
+				{ type: "tool_use", name: "write_to_file", params: {}, isComplete: true, call_id: "call-1" } as any,
+			]
+			let releaseCard!: () => void
+			deps.toolExecutor.executeTool = sinon.stub().returns(new Promise<void>((resolve) => (releaseCard = resolve)))
+			const streamDoneAtPost: boolean[] = []
+			deps.postStateToWebview = sinon.stub().callsFake(async () => {
+				streamDoneAtPost.push(taskState.didCompleteReadingStream)
+			})
+			const presenting = processor.presentAssistantMessage()
+			await new Promise((resolve) => setImmediate(resolve))
+			sinon.assert.calledOnce(deps.toolExecutor.executeTool)
+
+			const routing = processor.routeAssistantResponse(createRouteParams({ assistantMessage: "x", assistantTextOnly: "x" }))
+			await new Promise((resolve) => setImmediate(resolve))
+
+			streamDoneAtPost.should.containEql(true)
+			releaseCard()
+			await Promise.all([presenting, routing])
+		})
+
 		it("throws pending presentation error if one occurred during streaming", async () => {
 			// Simulate a pending error
 			;(processor as any).pendingPresentationError = new Error("presentation failed")

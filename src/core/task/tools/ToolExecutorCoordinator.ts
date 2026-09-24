@@ -79,6 +79,8 @@ export class ToolExecutorCoordinator {
 
 	private async executeModularTool(tool: IDiracTool, config: TaskConfig, block: ToolUse): Promise<ToolResponse> {
 		const startTime = Date.now()
+		// A note belongs to a card of this call; never carry one over from an earlier call.
+		config.taskState.pendingCardNote = undefined
 		const requestSnapshot = config.activeToolSnapshot
 		const nativeTool = requestSnapshot?.nativeTools.find(
 			(candidate) => "function" in candidate && candidate.function.name === block.name,
@@ -140,19 +142,6 @@ export class ToolExecutorCoordinator {
 
 			// 9. Store Result
 			response = result
-
-			// The note typed alongside Accept/Reject is appended once here, so every tool
-			// (including custom ones) gets it without building it itself.
-			const note = config.taskState.pendingCardNote
-			if (note) {
-				config.taskState.pendingCardNote = undefined
-				response =
-					typeof response === "string"
-						? response + formatResponse.userNote(note)
-						: Array.isArray(response)
-							? [...response, { type: "text", text: formatResponse.userNote(note).trimStart() }]
-							: response
-			}
 		} catch (error: any) {
 			executionSuccess = false
 
@@ -188,6 +177,19 @@ export class ToolExecutorCoordinator {
 				}
 			}
 		} finally {
+			// The note typed alongside Accept/Reject is appended once here, so every tool
+			// (including custom ones, and failed calls) gets it without building it itself.
+			const note = config.taskState.pendingCardNote
+			config.taskState.pendingCardNote = undefined
+			if (note) {
+				response =
+					typeof response === "string"
+						? response + formatResponse.userNote(note)
+						: Array.isArray(response)
+							? [...response, { type: "text", text: formatResponse.userNote(note).trimStart() }]
+							: response
+			}
+
 			// 12. Telemetry
 			const duration = Date.now() - startTime
 			const customMetadata = env.getCustomMetadata()

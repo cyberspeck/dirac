@@ -352,6 +352,27 @@ describe("TaskMessenger text authorship", () => {
 		assert.equal(taskState.turnOutcomes.skipped, 1)
 	})
 
+	it("sets no note and counts nothing for an Approve with text on a card with its own actions (API retry)", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({
+			header: "API Request Failed",
+			requireApproval: true,
+			actions: [
+				{ label: "Retry", value: DiracAskResponse.APPROVE, primary: true },
+				{ label: "Cancel", value: DiracAskResponse.REJECT },
+			],
+		})
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		taskState.askResponse = DiracAskResponse.APPROVE
+		taskState.askResponseText = "try again"
+
+		await interaction
+		assert.equal(taskState.pendingCardNote, undefined)
+		assert.equal(taskState.turnOutcomes.applied, 0)
+	})
+
 	it("counts a manual Approve as applied and a manual Reject as declined", async () => {
 		const { messenger, taskState } = createMessenger()
 

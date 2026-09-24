@@ -4,7 +4,7 @@ export const spec = {
     description:
         "Counts characters (with and without spaces), words and lines in one or more files. " +
         "Counts the raw file text, including Markdown syntax, headings and the bibliography. " +
-        "Comment lines (> TODO: / > FRAGE:) are not counted. " +
+        "Comment lines (> TODO: / > AI:) are not counted. " +
         "With several files it also reports a total.",
     parameters: [
         {
@@ -38,7 +38,8 @@ export interface Counts {
  * against a length requirement — the alternative is asking the model to count them and
  * subtract, which is exactly the arithmetic a small model gets wrong.
  */
-const COMMENT_LINE = /^[ \t]*>[ \t]*(TODO|FRAGE)\b.*$/gmu
+// The colon is required: `\b` alone would drop a quotation that starts with "AI-".
+const COMMENT_LINE = /^[ \t]*>[ \t]*(TODO|AI)[ \t]*:.*$/gmu
 
 export function countText(raw: string): Counts {
     const text = raw.normalize("NFC").replace(COMMENT_LINE, "")

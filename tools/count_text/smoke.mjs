@@ -24,6 +24,12 @@ function fakeEnv(files) {
     assert.equal(c.charsWithoutSpaces, 20) // 2 spaces + 1 newline removed
 }
 
+// Comment lines are not counted; a quotation that merely starts with "AI" is.
+{
+    assert.equal(countText("eins zwei\n> TODO: weg\n  > AI: auch weg").words, 2)
+    assert.equal(countText("> AI-Systeme drei").words, 3)
+}
+
 // Empty and whitespace-only files count as zero words, not one.
 {
     assert.equal(countText("").words, 0)

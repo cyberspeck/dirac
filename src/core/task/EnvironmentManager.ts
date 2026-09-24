@@ -151,14 +151,16 @@ export class EnvironmentManager {
 
 		const requestRuntime = this.dependencies.getRequestRuntime()
 		const mode = (requestRuntime?.workingConfiguration ?? this.dependencies.getWorkingConfiguration()).settings.mode
+		// The mode line goes out on every turn: without it the model trusts the last mode notice
+		// in history, which is stale after a switch. The long guidance stays on the switch turn.
+		details += `\n\n# Current Mode\n${mode === "plan" ? "PLAN MODE" : "ACT MODE"}`
 		const modeNotice = this.taskState.pendingModeNotice
 		if (modeNotice?.mode === mode) {
 			if (requestRuntime) modeNotice.includedInRequestId = requestRuntime.requestId
-			details += "\n\n# Current Mode"
 			if (mode === "plan") {
-				details += `\nPLAN MODE\n${formatResponse.planModeInstructions()}`
+				details += `\n${formatResponse.planModeInstructions()}`
 			} else {
-				details += `\nACT MODE\n${getEditingFilesInstructions()}`
+				details += `\n${getEditingFilesInstructions()}`
 			}
 		}
 

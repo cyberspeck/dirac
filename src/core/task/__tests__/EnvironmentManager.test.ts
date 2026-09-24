@@ -28,7 +28,7 @@ function createEnvironmentManager(
 	})
 }
 
-describe("EnvironmentManager mode-entry guidance", () => {
+describe("EnvironmentManager mode line and mode-entry guidance", () => {
 	it("emits Plan guidance only for a pending Plan entry", async () => {
 		const taskState = new TaskState()
 		taskState.pendingModeNotice = { mode: "plan" }
@@ -41,7 +41,9 @@ describe("EnvironmentManager mode-entry guidance", () => {
 		assert.equal(taskState.pendingModeNotice.includedInRequestId, "request-1")
 
 		taskState.pendingModeNotice = undefined
-		assert.equal(await manager.getEnvironmentDetails(false), "")
+		const laterDetails = await manager.getEnvironmentDetails(false)
+		assert.match(laterDetails, /# Current Mode\nPLAN MODE\n<\/environment_details>$/)
+		assert.doesNotMatch(laterDetails, /Research without modifying files/)
 	})
 
 	it("emits concise editing guidance only for a pending Act entry", async () => {
@@ -58,7 +60,9 @@ describe("EnvironmentManager mode-entry guidance", () => {
 		assert.equal(taskState.pendingModeNotice.includedInRequestId, "request-1")
 
 		taskState.pendingModeNotice = undefined
-		assert.equal(await manager.getEnvironmentDetails(false), "")
+		const laterDetails = await manager.getEnvironmentDetails(false)
+		assert.match(laterDetails, /# Current Mode\nACT MODE\n<\/environment_details>$/)
+		assert.doesNotMatch(laterDetails, /EDITING FILES/)
 	})
 
 	it("uses the request-bound mode and does not claim a newer mismatched notice", async () => {
@@ -71,7 +75,9 @@ describe("EnvironmentManager mode-entry guidance", () => {
 		const actState = new TaskState()
 		actState.pendingModeNotice = { mode: "act" }
 		const stalePlanRequest = createEnvironmentManager(actState, { taskMode: "act", requestMode: "plan" })
-		assert.equal(await stalePlanRequest.getEnvironmentDetails(false), "")
+		const staleDetails = await stalePlanRequest.getEnvironmentDetails(false)
+		assert.match(staleDetails, /# Current Mode\nPLAN MODE\n<\/environment_details>$/)
+		assert.doesNotMatch(staleDetails, /EDITING FILES/)
 		assert.deepEqual(actState.pendingModeNotice, { mode: "act" })
 	})
 })

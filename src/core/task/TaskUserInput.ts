@@ -77,7 +77,8 @@ export async function submitCardResponse(
 	if (
 		response === DiracAskResponse.MESSAGE &&
 		(text || (images?.length ?? 0) > 0 || (files?.length ?? 0) > 0 || value === SKIP_REST_VALUE) &&
-		ctx.taskState.status !== TaskStatus.CANCELLED
+		ctx.taskState.status !== TaskStatus.CANCELLED &&
+		!ctx.taskState.waitingCardAcceptsText
 	) {
 		ctx.taskState.didRejectTool = true
 	}

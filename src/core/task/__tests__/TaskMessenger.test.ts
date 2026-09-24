@@ -4,6 +4,7 @@ import { describe, it } from "mocha"
 import pWaitFor from "p-wait-for"
 import sinon from "sinon"
 import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
+import { RESPOND_TOOL_NAME, ResponseCardHeader, ResponseOperation, responseCardInput } from "@shared/responseTool"
 import { ToolSkippedByUserMessage } from "../tools/types/ToolSkippedByUserMessage"
 import { TaskMessenger } from "../TaskMessenger"
 
@@ -248,6 +249,47 @@ describe("TaskMessenger text authorship", () => {
 
 		await assert.rejects(interaction, ToolSkippedByUserMessage)
 		assert.deepEqual(taskState.waitingCardIds, [])
+	})
+
+	it("resolves a typed answer on a respond question card instead of throwing", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({
+			header: ResponseCardHeader.QUESTION,
+			toolName: RESPOND_TOOL_NAME,
+			rawInput: responseCardInput(ResponseOperation.QUESTION, "Which approach?", ["Option A", "Option B"]),
+			requireFeedback: true,
+		})
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		assert.equal(taskState.waitingCardAcceptsText, true)
+		taskState.askResponse = DiracAskResponse.MESSAGE
+		taskState.askResponseText = "mit geringem Symptomerleben"
+
+		const result = await interaction
+
+		assert.equal(result.text, "mit geringem Symptomerleben")
+		assert.equal(taskState.turnOutcomes.skipped, 0)
+		assert.equal(taskState.pendingCardNote, undefined)
+		assert.equal(taskState.waitingCardAcceptsText, false)
+	})
+
+	it("still throws for a Plan card answered with a typed message", async () => {
+		const { messenger, taskState } = createMessenger()
+		const card = await messenger.createCard({
+			header: ResponseCardHeader.PROPOSED_PLAN,
+			toolName: RESPOND_TOOL_NAME,
+			rawInput: responseCardInput(ResponseOperation.PLAN, "Do X then Y"),
+			requireFeedback: true,
+		})
+
+		const interaction = card.waitForInteraction()
+		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
+		assert.equal(taskState.waitingCardAcceptsText, false)
+		taskState.askResponse = DiracAskResponse.MESSAGE
+		taskState.askResponseText = "mit geringem Symptomerleben"
+
+		await assert.rejects(interaction, ToolSkippedByUserMessage)
 	})
 
 	it("captures the note typed alongside a Reject as pendingCardNote", async () => {

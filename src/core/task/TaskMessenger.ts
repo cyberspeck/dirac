@@ -18,6 +18,7 @@ import {
 } from "@shared/ExtensionMessage"
 import { Logger } from "@shared/services/Logger"
 import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
+import { isQuestionResponseCard } from "@shared/responseTool"
 import pWaitFor from "p-wait-for"
 import { getTaskHookModelContext } from "./runtime/TaskRuntimeModelContext"
 import { TaskMessengerDependencies } from "./types/task-messenger"
@@ -234,6 +235,7 @@ export class TaskMessenger implements ITaskMessenger {
 					let previousStatus: TaskStatus | undefined
 
 					try {
+						this.dependencies.taskState.waitingCardAcceptsText = isQuestionResponseCard(card)
 						if (!this.dependencies.taskState.waitingCardIds.includes(id)) {
 							this.dependencies.taskState.waitingCardIds.push(id)
 						}
@@ -347,7 +349,11 @@ export class TaskMessenger implements ITaskMessenger {
 						const hasUserMessageContent =
 							!!responseText || (responseImages?.length ?? 0) > 0 || (responseFiles?.length ?? 0) > 0
 						const isSkipRest = result.value === SKIP_REST_VALUE
-						if (result.response === DiracAskResponse.MESSAGE && (hasUserMessageContent || isSkipRest)) {
+						if (
+							result.response === DiracAskResponse.MESSAGE &&
+							(hasUserMessageContent || isSkipRest) &&
+							!this.dependencies.taskState.waitingCardAcceptsText
+						) {
 							this.dependencies.taskState.turnOutcomes.skipped++
 							if (hasUserMessageContent) {
 								// Echo the user's message in the chat UI
@@ -359,6 +365,7 @@ export class TaskMessenger implements ITaskMessenger {
 
 						return result
 					} finally {
+						this.dependencies.taskState.waitingCardAcceptsText = false
 						if (!this.dependencies.taskState.abort && previousStatus !== undefined) {
 							this.dependencies.taskState.status = previousStatus
 						}

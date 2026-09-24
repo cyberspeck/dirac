@@ -57,6 +57,9 @@ export class TaskState {
 	askResponseImages?: string[]
 	askResponseFiles?: string[]
 	lastMessageTs?: number
+	// True while the currently-waiting card is a `respond` question card, whose typed
+	// text is the answer, not a skip. Set in TaskMessenger.waitForInteraction.
+	waitingCardAcceptsText = false
 	waitingCardIds: string[] = []
 	get lastWaitingCardId(): string | undefined {
 		return this.waitingCardIds[0]

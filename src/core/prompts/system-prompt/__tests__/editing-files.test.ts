@@ -72,6 +72,18 @@ describe("getEditingFilesInstructions", () => {
 		}).should.equal("")
 	})
 
+	it("names an enabled custom edit tool for partial edits, before write_to_file, when edit_file is off", () => {
+		const section = getEditingFilesInstructions({ editFileEnabled: false, editAstEnabled: false, customEditTools: ["my_edit_tool"] })
+		section.should.containEql("- Use `my_edit_tool` for partial edits, `write_to_file` for new or deliberately overwritten complete files")
+		getEditingFilesInstructions({ editFileEnabled: false, customEditTools: [] }).should.equal(
+			getEditingFilesInstructions({ editFileEnabled: false }),
+		)
+	})
+
+	it("ignores custom edit tools while edit_file is on", () => {
+		getEditingFilesInstructions({ customEditTools: ["my_edit_tool"] }).should.equal(getEditingFilesInstructions())
+	})
+
 	it("omits edit_ast from the tool list when it is disabled but edit_file stays", () => {
 		const section = getEditingFilesInstructions({ editAstEnabled: false })
 		section.should.not.match(/\bedit_ast\b/)

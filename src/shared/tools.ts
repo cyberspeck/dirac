@@ -39,6 +39,8 @@ export interface DiracToolSpec<TContext = any> {
 	instruction?: string
 	contextRequirements?: (context: TContext) => boolean
 	parameters?: Array<DiracToolSpecParameter<TContext>>
+	/** A custom tool's own label for what it does. "edit" names it in the Act-mode editing guidance; a prompt hint, not a permission. */
+	category?: "read" | "edit"
 }
 
 // Define available tool ids

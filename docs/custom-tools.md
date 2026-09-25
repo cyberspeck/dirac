@@ -25,6 +25,10 @@ Export `spec` (id, name, a non-empty `description`, `parameters`) and `create()`
 `IDiracTool`: `spec()`, `supportedSurfaces()` (usually `["all"]`) and
 `processCall(args, env)`, which returns the text the model sees.
 
+A tool that edits files can add `category: "edit"` to `spec`. With `edit_file` disabled, the
+Act-mode editing guidance then names it for partial edits, ahead of `write_to_file`. It is a
+prompt hint only; permissions still come from `preview.category` below.
+
 `env` is the `IToolEnvironment` every built-in tool gets, and the only interface a tool should use.
 Prefer `env.workspace` (`resolvePath`, `getFileInfo`, `readFile`, `writeFile`, …) over `fs`: it
 resolves paths the way the built-ins do and works on every platform.

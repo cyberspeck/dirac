@@ -15,6 +15,8 @@ export const getEditingFilesInstructions = (
 		writeToFileEnabled?: boolean
 		readFileEnabled?: boolean
 		searchFilesEnabled?: boolean
+		/** Enabled custom tools declaring `category: "edit"`; named for partial edits only when edit_file is off. */
+		customEditTools?: readonly string[]
 	} = {},
 ) => {
 	const executeCommandEnabled = opts.executeCommandEnabled ?? true
@@ -26,6 +28,8 @@ export const getEditingFilesInstructions = (
 	const bulkClause = executeCommandEnabled ? ", and `execute_command` only for mechanical bulk transformations" : ""
 
 	const tools: string[] = []
+	const customEditTools = (opts.customEditTools ?? []).map((name) => `\`${name}\``)
+	if (!editFileEnabled && customEditTools.length > 0) tools.push(`${joinOr(customEditTools)} for partial edits`)
 	if (editAstEnabled) tools.push("`edit_ast` for indexed symbol renames or whole-definition replacements")
 	if (editFileEnabled) tools.push("`edit_file` for partial edits")
 	if (writeToFileEnabled) tools.push("`write_to_file` for new or deliberately overwritten complete files")

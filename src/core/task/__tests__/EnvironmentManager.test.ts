@@ -23,6 +23,7 @@ function createEnvironmentManager(
 		cwd?: string
 		diracIgnoreController?: any
 		getExecutableToolNames?: () => Promise<ReadonlySet<string>>
+		getExecutableEditToolNames?: () => Promise<readonly string[]>
 	} = {},
 ): EnvironmentManager {
 	const taskMode = options.taskMode ?? "act"
@@ -40,6 +41,7 @@ function createEnvironmentManager(
 			workingConfiguration: { settings: { mode: requestMode }, executionOptions: { multiRootEnabled: false } },
 		}) as any,
 		getExecutableToolNames: options.getExecutableToolNames ?? (async () => ALL_EDIT_TOOLS),
+		getExecutableEditToolNames: options.getExecutableEditToolNames,
 		diracIgnoreController: options.diracIgnoreController,
 	})
 }
@@ -94,6 +96,17 @@ describe("EnvironmentManager mode line and mode-entry guidance", () => {
 		assert.match(entryDetails, /## EDITING FILES/)
 		assert.doesNotMatch(entryDetails, /\bedit_ast\b/)
 		assert.match(entryDetails, /\bedit_file\b/)
+	})
+
+	it("names enabled custom edit tools in the Act-mode guidance when edit_file is off", async () => {
+		const withoutEditFile = new Set([...ALL_EDIT_TOOLS].filter((name) => name !== "edit_file"))
+		const taskState = new TaskState()
+		taskState.pendingModeNotice = { mode: "act" }
+		const manager = createEnvironmentManager(taskState, {
+			getExecutableToolNames: async () => withoutEditFile,
+			getExecutableEditToolNames: async () => ["my_edit_tool"],
+		})
+		assert.match(await manager.getEnvironmentDetails(false), /- Use `my_edit_tool` for partial edits, /)
 	})
 
 	describe("on the first request of a task, before any tool snapshot exists", () => {

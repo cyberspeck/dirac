@@ -79,6 +79,8 @@ export interface EnvironmentManagerDependencies {
 	getRequestRuntime: () => TaskRequestRuntime | undefined
 	/** Tool names the request being built will send; guidance must not teach any other tool. */
 	getExecutableToolNames: () => Promise<ReadonlySet<string>>
+	/** Enabled custom tools declaring `category: "edit"`; named for partial edits when edit_file is off. */
+	getExecutableEditToolNames?: () => Promise<readonly string[]>
 	workspaceManager?: WorkspaceRootManager
 	/** Files it blocks are left out of the recent-files list: naming them invites a read that fails. */
 	diracIgnoreController?: DiracIgnoreController
@@ -175,6 +177,7 @@ export class EnvironmentManager {
 					writeToFileEnabled: toolNames.has("write_to_file"),
 					readFileEnabled: toolNames.has("read_file"),
 					searchFilesEnabled: toolNames.has("search_files"),
+					customEditTools: toolNames.has("edit_file") ? [] : ((await this.dependencies.getExecutableEditToolNames?.()) ?? []),
 				})}`
 			}
 		}

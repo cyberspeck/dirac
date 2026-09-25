@@ -1,6 +1,6 @@
 import { DiracToolSet } from "@core/prompts/system-prompt/registry/DiracToolSet"
 import type { SystemPromptContext } from "@core/prompts/system-prompt/types"
-import { DiracDefaultTool } from "@/shared/tools"
+import { DiracDefaultTool, type DiracToolSpec } from "@/shared/tools"
 import { ToolExecutorCoordinator } from "../ToolExecutorCoordinator"
 import { SurfaceToolEnvironmentFactory } from "../adapters/SurfaceAdapter"
 import { ToolRegistry } from "../registry/ToolRegistry"
@@ -112,6 +112,10 @@ export class ToolSnapshotManager {
 	 * would run workspace-code approval before, and again with, the request's own snapshot.
 	 */
 	async getExecutableToolNames(toggles: Record<string, boolean>): Promise<Set<string>> {
+		return new Set((await this.getExecutableToolSpecs(toggles)).map((spec) => spec.name))
+	}
+
+	async getExecutableToolSpecs(toggles: Record<string, boolean>): Promise<DiracToolSpec[]> {
 		const options = { workspaceRoot: this.options.getWorkspaceRoot(), includeUserTools: false, toggles }
 		return refreshToolRegistryForWorkspace(options, (registry) => {
 			const taskId = this.options.getTaskId()
@@ -120,7 +124,7 @@ export class ToolSnapshotManager {
 				.getEnabledTools(taskId, workspaceRoot)
 				.filter((tool) => this.options.isToolAvailable?.(tool) ?? true)
 			const tools = this.selectEffectiveTools(registry, registry.getAllTools(taskId, workspaceRoot), enabledTools)
-			return new Set(tools.map((tool) => tool.spec.name))
+			return tools.map((tool) => tool.spec)
 		})
 	}
 

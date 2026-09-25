@@ -410,6 +410,11 @@ export class ToolExecutor {
 	public getExecutableToolNames(workingConfiguration: TaskWorkingConfiguration): Promise<Set<string>> {
 		return this.snapshotManager.getExecutableToolNames(workingConfiguration.settings.toolToggles || {})
 	}
+	/** Names of the tools the next request will send that declare `category: "edit"`. */
+	public async getExecutableEditToolNames(workingConfiguration: TaskWorkingConfiguration): Promise<string[]> {
+		const specs = await this.snapshotManager.getExecutableToolSpecs(workingConfiguration.settings.toolToggles || {})
+		return specs.filter((spec) => spec.category === "edit").map((spec) => spec.name)
+	}
 	public getActiveSnapshot(): ToolRequestSnapshot | undefined {
 		return this.snapshotManager.getActiveSnapshot()
 	}

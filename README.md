@@ -56,7 +56,8 @@ typing a reply and sending it just answers the question. Once the last step in a
 the review tab closes.
 
 To get an earlier version of a file back, right-click it in VS Code's Explorer and choose
-**Open Timeline**, which lists earlier saves and lets you open or restore one.
+**Open Timeline**, which lists earlier saves and lets you open or restore one. Edits Dirac applied
+show up as `Workspace Edit`; the entry just below one is the file as it was before that edit.
 
 ## Why `tools/count_text` ships here
 

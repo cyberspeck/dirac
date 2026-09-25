@@ -42,9 +42,10 @@ OUT=${2:-$WT/tmp/unit-run}
 mkdir -p "$OUT" && OUT=$(cd "$OUT" && pwd)
 cd "$WT" || exit 2
 
-# Honour .nvmrc when nvm is installed; otherwise use whatever node is on PATH.
-if [ -f .nvmrc ] && [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
-	. "${NVM_DIR:-$HOME/.nvm}/nvm.sh" && nvm use --silent >/dev/null
+# Node 22 when nvm has it: the baselines were recorded on 22, and .nvmrc (lts/*) now resolves to 24,
+# where 8 order-dependent telemetry hook tests fail. Otherwise use whatever node is on PATH.
+if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+	. "${NVM_DIR:-$HOME/.nvm}/nvm.sh" && { nvm use --silent 22 >/dev/null 2>&1 || nvm use --silent >/dev/null; }
 fi
 MAJOR=$(node -p 'process.versions.node.split(".")[0]') || exit 2
 if [ "$MAJOR" -ge 26 ]; then

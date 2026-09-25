@@ -12,7 +12,8 @@ export interface TaskPromptArtifactsContext {
 	taskId: string
 	// Per-request sequence number (1-based). Included in the artifact filename so a
 	// multi-call turn (e.g. the noToolsUsed retry loop) leaves one file per API
-	// request instead of each write overwriting the previous one.
+	// request instead of each write overwriting the previous one. A floor only: a
+	// re-created Task restarts its count, so the writer skips past existing files.
 	requestSeq: number
 	cwd: string
 	writePromptMetadataEnabled: boolean
@@ -111,6 +112,17 @@ export async function writePromptResponseArtifact(
 	}
 }
 
+/** Highest NNN among `task-<taskId>-debug-NNN.md` in dir; 0 when there is none. */
+async function highestDebugSeq(dir: string, taskId: string): Promise<number> {
+	const prefix = `task-${taskId}-debug-`
+	let highest = 0
+	for (const name of await fs.readdir(dir)) {
+		const seq = name.startsWith(prefix) ? name.slice(prefix.length).match(/^(\d+)\.md$/)?.[1] : undefined
+		if (seq) highest = Math.max(highest, Number(seq))
+	}
+	return highest
+}
+
 /** Returns the written artifact's path, or undefined when disabled, rejected or failed. */
 export async function writePromptMetadataArtifacts(
 	ctx: TaskPromptArtifactsContext,
@@ -175,7 +187,8 @@ export async function writePromptMetadataArtifacts(
 		const gitignorePath = path.join(writeDir, ".gitignore")
 		await fs.writeFile(gitignorePath, "*\n!.gitignore\n", "utf8").catch(() => {})
 
-		const debugPath = path.join(writeDir, `task-${ctx.taskId}-debug-${String(ctx.requestSeq).padStart(3, "0")}.md`)
+		const seq = Math.max(ctx.requestSeq, (await highestDebugSeq(writeDir, ctx.taskId)) + 1)
+		const debugPath = path.join(writeDir, `task-${ctx.taskId}-debug-${String(seq).padStart(3, "0")}.md`)
 
 		let markdown = `## System Prompt\n\n${params.systemPrompt}\n\n`
 

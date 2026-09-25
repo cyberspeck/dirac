@@ -94,6 +94,28 @@ describe("TaskPromptArtifacts", () => {
 		assert.match(second, /second call \(the delivered answer\)/)
 	})
 
+	it("never overwrites an earlier request's artifact when a re-created Task restarts its count", async () => {
+		const artifactDir = path.join(cwd, "artifacts")
+		await fs.mkdir(artifactDir)
+		await fs.writeFile(path.join(artifactDir, "task-task-resumed-debug-005.md"), "earlier request")
+		await fs.writeFile(path.join(artifactDir, "task-task-resumed-debug-005-response.md"), "earlier response")
+		await fs.writeFile(path.join(artifactDir, "task-other-debug-009.md"), "another task")
+
+		const written = await writePromptMetadataArtifacts(
+			{
+				taskId: "task-resumed",
+				requestSeq: 1,
+				cwd,
+				writePromptMetadataEnabled: true,
+				writePromptMetadataDirectory: "artifacts",
+			},
+			{ systemPrompt: "after resume", providerInfo: { providerId: "anthropic", modelId: "m" } },
+		)
+
+		assert.equal(written, path.join(artifactDir, "task-task-resumed-debug-006.md"))
+		assert.equal(await fs.readFile(path.join(artifactDir, "task-task-resumed-debug-005.md"), "utf8"), "earlier request")
+	})
+
 	// Regression: the containment guard used to compare resolved paths with a case-sensitive
 	// `startsWith`. On Windows the workspace cwd (vscode.Uri.fsPath) and fs.realpath() disagree on
 	// drive-letter case, so the guard rejected the extension's own artifact directory and the write

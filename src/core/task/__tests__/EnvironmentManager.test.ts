@@ -55,6 +55,7 @@ describe("EnvironmentManager mode line and mode-entry guidance", () => {
 		const entryDetails = await manager.getEnvironmentDetails(false)
 		assert.match(entryDetails, /# Current Mode\nPLAN MODE/)
 		assert.match(entryDetails, /Research without modifying files/)
+		assert.match(entryDetails, /do not ask them to switch or offer a mode switch/)
 		assert.doesNotMatch(entryDetails, /EDITING FILES/)
 		assert.equal(taskState.pendingModeNotice.includedInRequestId, "request-1")
 

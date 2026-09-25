@@ -289,7 +289,7 @@ export const formatResponse = {
 	},
 
 	planModeInstructions: () => {
-		return `Research without modifying files. Answer simple questions directly. For implementation work, gather the necessary context and use \`respond\` with \`plan\` to present a concrete proposal. Ask the user to switch to Act Mode before implementing; you cannot switch modes yourself.`
+		return `Research without modifying files. Answer simple questions directly. For implementation work, gather the necessary context and use \`respond\` with \`plan\` to present a concrete proposal, and end with the plan itself. You cannot switch modes; the user switches to Act Mode when they want it implemented, so do not ask them to switch or offer a mode switch as an answer option.`
 	},
 
 	fileEditWithUserChanges: (

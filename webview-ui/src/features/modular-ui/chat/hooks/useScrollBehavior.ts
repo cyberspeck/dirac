@@ -195,20 +195,17 @@ export function useScrollBehavior(
 	}, [])
 
 	const handleListHeightChanged = useCallback((height: number) => {
-		const listGrew = height > lastListHeightRef.current
-		const listShrunk = height < lastListHeightRef.current
+		const changed = height !== lastListHeightRef.current
 		lastListHeightRef.current = height
-		if (!isFollowingRef.current) return
+		if (!changed || !isFollowingRef.current) return
 
+		// Re-anchor to the end of the last row on every change. autoscrollToBottom() only reacts to an
+		// atBottom flip within 100 ms, which has usually passed by now, and growth below the
+		// at-bottom threshold never flips it, so a growing last row would stay cut off.
 		cancelAnimationFrame(listHeightRafIdRef.current)
 		listHeightRafIdRef.current = requestAnimationFrame(() => {
-			if (listGrew) {
-				virtuosoRef.current?.autoscrollToBottom()
-			} else if (listShrunk) {
-				// autoscrollToBottom only works when notAtBottomBecause === "SIZE_INCREASED";
-				// on shrink it would no-op, so re-anchor explicitly to the new last item.
-				virtuosoRef.current?.scrollToIndex({ index: "LAST", align: "end", behavior: "auto" })
-			}
+			if (!isFollowingRef.current) return
+			virtuosoRef.current?.scrollToIndex({ index: "LAST", align: "end", behavior: "auto" })
 		})
 	}, [])
 

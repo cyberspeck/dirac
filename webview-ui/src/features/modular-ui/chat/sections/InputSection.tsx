@@ -29,7 +29,7 @@ const InputSectionContent: React.FC<{ context: ChatViewContext }> = ({ context }
 
 	const { activeQuote, setActiveQuote, isTextAreaFocused, inputValue, selectedImages, selectedFiles, taskStatus } = chatState
 
-	const { isFollowingRef, scrollToBottomAuto } = scrollBehavior
+	const { isFollowingRef, virtuosoRef } = scrollBehavior
 	const activeProfileName =
 		selectedModelInfo.mode === "plan"
 			? apiConfiguration?.planModeOpenAiProfileName
@@ -97,9 +97,13 @@ const InputSectionContent: React.FC<{ context: ChatViewContext }> = ({ context }
 					}
 				}}
 				onHeightChange={() => {
-					if (isFollowingRef.current) {
-						scrollToBottomAuto()
-					}
+					// The transcript shrinks as the input grows. scrollTo is clamped against the live
+					// layout, while scrollToIndex would use Virtuoso's not yet updated viewport height.
+					requestAnimationFrame(() => {
+						if (isFollowingRef.current) {
+							virtuosoRef.current?.scrollTo({ top: Number.MAX_SAFE_INTEGER })
+						}
+					})
 				}}
 				onModelButtonClick={() => {
 					navigateToSettings("models-api")

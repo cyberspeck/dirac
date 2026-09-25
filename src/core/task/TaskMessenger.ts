@@ -18,7 +18,7 @@ import {
 } from "@shared/ExtensionMessage"
 import { Logger } from "@shared/services/Logger"
 import { DiracAskResponse, SKIP_REST_VALUE } from "@shared/WebviewMessage"
-import { isQuestionResponseCard } from "@shared/responseTool"
+import { isPlanResponseCard, isQuestionResponseCard } from "@shared/responseTool"
 import pWaitFor from "p-wait-for"
 import { getTaskHookModelContext } from "./runtime/TaskRuntimeModelContext"
 import { TaskMessengerDependencies } from "./types/task-messenger"
@@ -235,7 +235,10 @@ export class TaskMessenger implements ITaskMessenger {
 					let previousStatus: TaskStatus | undefined
 
 					try {
-						this.dependencies.taskState.waitingCardAcceptsText = isQuestionResponseCard(card)
+						// Text typed on a question or plan card is the user's reply, which the respond
+						// tool handles; on any other card it declines the tool call.
+						this.dependencies.taskState.waitingCardAcceptsText =
+							isQuestionResponseCard(card) || isPlanResponseCard(card)
 						if (!this.dependencies.taskState.waitingCardIds.includes(id)) {
 							this.dependencies.taskState.waitingCardIds.push(id)
 						}

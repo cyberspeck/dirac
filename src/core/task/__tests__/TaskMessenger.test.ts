@@ -219,7 +219,7 @@ describe("TaskMessenger text authorship", () => {
 	it("accepts a chat message while awaiting card input and clears the wait", async () => {
 		const { messenger, messages, taskState, messageStateHandler } = createMessenger()
 		const card = await messenger.createCard({
-			header: "Proposed Plan",
+			header: "Permission Request",
 			requireFeedback: true,
 			collapsed: false,
 		})
@@ -274,7 +274,7 @@ describe("TaskMessenger text authorship", () => {
 		assert.equal(taskState.waitingCardAcceptsText, false)
 	})
 
-	it("still throws for a Plan card answered with a typed message", async () => {
+	it("resolves a typed reply on a Plan card as the user's reply, not a declined tool call", async () => {
 		const { messenger, taskState } = createMessenger()
 		const card = await messenger.createCard({
 			header: ResponseCardHeader.PROPOSED_PLAN,
@@ -285,11 +285,14 @@ describe("TaskMessenger text authorship", () => {
 
 		const interaction = card.waitForInteraction()
 		await pWaitFor(() => taskState.status === TaskStatus.AWAITING_USER_INPUT)
-		assert.equal(taskState.waitingCardAcceptsText, false)
+		assert.equal(taskState.waitingCardAcceptsText, true)
 		taskState.askResponse = DiracAskResponse.MESSAGE
-		taskState.askResponseText = "mit geringem Symptomerleben"
+		taskState.askResponseText = "Do Y first"
 
-		await assert.rejects(interaction, ToolSkippedByUserMessage)
+		const result = await interaction
+
+		assert.equal(result.text, "Do Y first")
+		assert.equal(taskState.turnOutcomes.skipped, 0)
 	})
 
 	it("captures the note typed alongside a Reject as pendingCardNote", async () => {

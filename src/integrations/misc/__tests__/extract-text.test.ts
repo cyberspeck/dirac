@@ -24,9 +24,9 @@ describe("extract-text", () => {
 
 	describe("PDF extraction", () => {
 		/** A minimal valid PDF, one line of Helvetica text per page. */
-		function buildPdf(pages: string[]): Buffer {
+		function buildPdf(pages: string[], catalogExtra = ""): Buffer {
 			const objects = [
-				"<< /Type /Catalog /Pages 2 0 R >>",
+				`<< /Type /Catalog /Pages 2 0 R ${catalogExtra}>>`,
 				`<< /Type /Pages /Kids [${pages.map((_, i) => `${4 + i * 2} 0 R`).join(" ")}] /Count ${pages.length} >>`,
 				"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
 			]
@@ -59,6 +59,26 @@ describe("extract-text", () => {
 				assert.ok(first >= 0 && second > first, text)
 				assert.strictEqual(lines[first + 1], "first page")
 				assert.strictEqual(lines[second + 1], "second page")
+			} finally {
+				await fs.unlink(tempFile).catch(() => {})
+			}
+		})
+
+		it("adds the printed page label when it differs from the PDF page number", async () => {
+			const tempFile = path.join(os.tmpdir(), `dirac-extract-test-${Date.now()}.pdf`)
+			// Labels: Cover, 1, 2, then 4 (equal to the PDF page number, so no printed label).
+			const labels = "/PageLabels << /Nums [0 << /P (Cover) >> 1 << /S /D >> 3 << /S /D /St 4 >>] >> "
+			await fs.writeFile(tempFile, buildPdf(["a", "b", "c", "d"], labels))
+			try {
+				const markers = (await callTextExtractionFunctions(tempFile, false))
+					.split(/\r?\n/)
+					.filter((l) => l.startsWith("[page "))
+				assert.deepStrictEqual(markers, [
+					"[page 1, printed Cover]",
+					"[page 2, printed 1]",
+					"[page 3, printed 2]",
+					"[page 4]",
+				])
 			} finally {
 				await fs.unlink(tempFile).catch(() => {})
 			}

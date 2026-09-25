@@ -108,24 +108,37 @@ export async function callTextExtractionFunctions(filePath: string, truncate = t
 }
 
 /**
- * pdf-parse's own page renderer (lib/pdf-parse.js render_page), plus a `[page N]` line before each
- * page so a reader of the text can cite the page. N is the PDF page, not the printed page number.
+ * pdf-parse's own page renderer (lib/pdf-parse.js render_page), plus a marker line before each page so
+ * a reader of the text can cite the page: `[page N]`, N being the PDF page (1-based), or
+ * `[page N, printed L]` when the PDF's page labels give that page a label L other than N (the number
+ * printed in the book, e.g. front matter shifting the count, or "iv", "Cover"). Labels that cannot be
+ * read are ignored.
  */
-async function renderPageWithMarker(pageData: any): Promise<string> {
-	const textContent = await pageData.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false })
-	let lastY: number | undefined
-	let text = ""
-	for (const item of textContent.items) {
-		text += lastY === item.transform[5] || !lastY ? item.str : `\n${item.str}`
-		lastY = item.transform[5]
+function pageRendererWithMarker() {
+	let labels: Promise<string[] | null> | undefined
+	return async (pageData: any): Promise<string> => {
+		// Read once per document, through the page's transport: pdf-parse does not expose the document.
+		labels ??= Promise.resolve()
+			.then(() => pageData.transport.getPageLabels())
+			.catch(() => null)
+		const textContent = await pageData.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false })
+		let lastY: number | undefined
+		let text = ""
+		for (const item of textContent.items) {
+			text += lastY === item.transform[5] || !lastY ? item.str : `\n${item.str}`
+			lastY = item.transform[5]
+		}
+		const n = pageData.pageNumber
+		const label = (await labels)?.[n - 1]
+		const printed = typeof label === "string" && label !== "" && label !== String(n) ? `, printed ${label}` : ""
+		return `[page ${n}${printed}]\n${text}`
 	}
-	return `[page ${pageData.pageNumber}]\n${text}`
 }
 
 export async function extractTextFromPDF(filePath: string): Promise<string> {
 	// pdf.js 1.10 can misparse a Node Buffer ("bad XRef entry"); a plain Uint8Array copy parses.
 	const dataBuffer = new Uint8Array(await fs.readFile(filePath))
-	const data = await pdf(dataBuffer, { pagerender: renderPageWithMarker })
+	const data = await pdf(dataBuffer, { pagerender: pageRendererWithMarker() })
 	return data.text
 }
 

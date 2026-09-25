@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 import { arePathsEqual } from "@/utils/path"
-import { DIFF_VIEW_URI_SCHEME } from "./diff-view-constants"
+import { DIFF_VIEW_URI_SCHEME, REVIEW_TAB_TITLE } from "./diff-view-constants"
 
 export class ReviewContextManager {
 	private static reviewingFiles: Map<string, string> = new Map()
@@ -64,7 +64,7 @@ export class ReviewContextManager {
 
 		await vscode.commands.executeCommand(
 			"vscode.changes",
-			"Review Dirac Edits",
+			REVIEW_TAB_TITLE,
 			files.map((file) => {
 				const absolutePath = file.absolutePath.toPosix()
 				return [

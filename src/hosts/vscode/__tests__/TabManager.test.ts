@@ -18,8 +18,8 @@ describe("TabManager.closeReviewTabs", () => {
 		delete (vscode.window.tabGroups as any).close
 	})
 
-	it("closes a tab labelled 'Review Dirac Edits' whatever its input type", async () => {
-		const reviewTab = { label: "Review Dirac Edits", input: { constructor: { name: "TabInputTextMultiDiff" } } }
+	it("closes the review tab by the label VS Code gives it ('Review Dirac Edits (N files)')", async () => {
+		const reviewTab = { label: "Review Dirac Edits (1 file)", input: undefined }
 		;(vscode.window.tabGroups as any).all = [{ tabs: [reviewTab] }]
 
 		await TabManager.closeReviewTabs()
@@ -28,8 +28,8 @@ describe("TabManager.closeReviewTabs", () => {
 	})
 
 	it("leaves other tabs alone", async () => {
-		const reviewTab = { label: "Review Dirac Edits", input: {} }
-		const otherTab = { label: "some-file.ts", input: {} }
+		const reviewTab = { label: "Review Dirac Edits (3 files)", input: {} }
+		const otherTab = { label: "Review Dirac Edits notes.md", input: {} }
 		;(vscode.window.tabGroups as any).all = [{ tabs: [reviewTab, otherTab] }]
 
 		await TabManager.closeReviewTabs()

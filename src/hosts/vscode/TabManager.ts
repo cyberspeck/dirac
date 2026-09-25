@@ -3,7 +3,7 @@ import * as vscode from "vscode"
 import { getErrorMessage } from "@/shared/errors"
 import { Logger } from "@/shared/services/Logger"
 import { arePathsEqual } from "@/utils/path"
-import { DIFF_VIEW_URI_SCHEME } from "./diff-view-constants"
+import { DIFF_VIEW_URI_SCHEME, REVIEW_TAB_TITLE } from "./diff-view-constants"
 
 export interface TabManagerOptions {
 	preserveFocus?: boolean
@@ -119,7 +119,11 @@ export class TabManager {
 
 	static async closeReviewTabs(): Promise<void> {
 		try {
-			const tabs = vscode.window.tabGroups.all.flatMap((tg) => tg.tabs).filter((tab) => tab.label === "Review Dirac Edits")
+			// The multi-diff tab input (TabInputTextMultiDiff) is a proposed API, not in the stable typings,
+			// so the label is the only handle. VS Code appends the file count: "Review Dirac Edits (1 file)".
+			const tabs = vscode.window.tabGroups.all
+				.flatMap((tg) => tg.tabs)
+				.filter((tab) => tab.label === REVIEW_TAB_TITLE || tab.label.startsWith(`${REVIEW_TAB_TITLE} (`))
 
 			if (tabs.length === 0) {
 				return

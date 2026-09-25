@@ -9,6 +9,9 @@ export interface TabManagerOptions {
 	preserveFocus?: boolean
 }
 
+// "(1 file)", "(3 files)", or localized ("(1 Datei)"); not a user's "Review Dirac Edits (draft).md".
+const REVIEW_TAB_LABEL = new RegExp(`^${REVIEW_TAB_TITLE} \\(\\d+ [^()]+\\)$`)
+
 export class TabManager {
 	private static closeTab(tab: vscode.Tab): void {
 		if (!tab.isDirty) {
@@ -123,7 +126,7 @@ export class TabManager {
 			// so the label is the only handle. VS Code appends the file count: "Review Dirac Edits (1 file)".
 			const tabs = vscode.window.tabGroups.all
 				.flatMap((tg) => tg.tabs)
-				.filter((tab) => tab.label === REVIEW_TAB_TITLE || tab.label.startsWith(`${REVIEW_TAB_TITLE} (`))
+				.filter((tab) => tab.label === REVIEW_TAB_TITLE || REVIEW_TAB_LABEL.test(tab.label))
 
 			if (tabs.length === 0) {
 				return

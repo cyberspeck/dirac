@@ -175,7 +175,8 @@ export class EditFileTool implements IDiracTool<EditFileArgs> {
 		} catch (error) {
 			// Text typed on the waiting card: the coordinator skips the cards and forwards the text.
 			if (error instanceof ToolSkippedByUserMessage) {
-				await env.editor.hideReview()
+				// A failing cleanup must not replace the skip, or the typed text is lost.
+				await env.editor.hideReview().catch(() => {})
 				throw error
 			}
 			const executionError = toError(error)

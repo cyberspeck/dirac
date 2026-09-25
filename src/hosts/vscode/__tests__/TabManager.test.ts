@@ -29,13 +29,15 @@ describe("TabManager.closeReviewTabs", () => {
 
 	it("leaves other tabs alone", async () => {
 		const reviewTab = { label: "Review Dirac Edits (3 files)", input: {} }
+		const localized = { label: "Review Dirac Edits (3 Dateien)", input: {} }
 		const otherTab = { label: "Review Dirac Edits notes.md", input: {} }
-		;(vscode.window.tabGroups as any).all = [{ tabs: [reviewTab, otherTab] }]
+		const lookalike = { label: "Review Dirac Edits (draft).md", input: {} }
+		;(vscode.window.tabGroups as any).all = [{ tabs: [reviewTab, localized, otherTab, lookalike] }]
 
 		await TabManager.closeReviewTabs()
 
 		const closedTabs = closeStub.firstCall.args[0]
-		assert.deepEqual(closedTabs, [reviewTab])
+		assert.deepEqual(closedTabs, [reviewTab, localized])
 	})
 
 	it("does nothing when no review tab is open", async () => {

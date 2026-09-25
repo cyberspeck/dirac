@@ -282,7 +282,7 @@ export const formatResponse = {
 		const userResponseMessage = responseText
 			? `${mode === "plan" ? "Respond to this message" : "New instructions"}:\n<user_message>\n${responseText}\n</user_message>`
 			: mode === "plan"
-				? "(The user did not provide a new message. Ask how to proceed or suggest switching to Act mode.)"
+				? "(The user did not provide a new message. Ask how to proceed.)"
 				: ""
 
 		return [taskResumptionMessage, userResponseMessage]

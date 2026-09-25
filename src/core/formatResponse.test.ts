@@ -196,4 +196,12 @@ describe("formatResponse", () => {
 			warning.should.containEql("Read the current state before modifying these files")
 		})
 	})
+
+	describe("taskResumption", () => {
+		it("asks how to proceed in plan mode without suggesting a mode switch", () => {
+			const [, userMessage] = formatResponse.taskResumption("plan", "1 hour ago", "/w", false)
+			userMessage.should.containEql("Ask how to proceed")
+			userMessage.should.not.match(/Act mode/i)
+		})
+	})
 })

@@ -92,6 +92,9 @@ export class StateController {
 			return true
 		}
 		if (task.taskState.status === TaskStatus.COMPLETED) return false
+		// A question or plan card waiting for a reply survives the switch: the new mode is already
+		// installed on the task and reaches the model with the reply. Cancelling would orphan the card.
+		if (task.taskState.lastWaitingCardId && task.taskState.waitingCardAcceptsText) return false
 
 		await this.cancelTaskFn()
 		return false

@@ -6,7 +6,7 @@ import { StateController } from "../StateController"
 describe("StateController", () => {
 	afterEach(() => sinon.restore())
 
-	function createController(status: TaskStatus) {
+	function createController(status: TaskStatus, waitingCard?: { acceptsText: boolean }) {
 		const task = {
 			ulid: "task-ulid",
 			applyWorkingConfigurationUpdate: sinon.stub().callsFake(async (_patch, beforeCommit) => {
@@ -16,6 +16,8 @@ describe("StateController", () => {
 				status,
 				pendingModeNotice: undefined,
 				isAwaitingPlanResponse: false,
+				lastWaitingCardId: waitingCard ? "card-1" : undefined,
+				waitingCardAcceptsText: waitingCard?.acceptsText ?? false,
 			},
 		} as any
 		const stateManager = {
@@ -59,6 +61,24 @@ describe("StateController", () => {
 
 	it("still cancels an active task when switching mode", async () => {
 		const { controller, cancelTaskFn } = createController(TaskStatus.STREAMING_TEXT)
+
+		await controller.togglePlanActMode("plan")
+
+		sinon.assert.calledOnce(cancelTaskFn)
+	})
+
+	it("keeps a waiting question card when switching mode", async () => {
+		const { controller, task, cancelTaskFn } = createController(TaskStatus.AWAITING_USER_INPUT, { acceptsText: true })
+
+		const sentMessage = await controller.togglePlanActMode("plan")
+
+		sentMessage.should.equal(false)
+		sinon.assert.calledOnce(task.applyWorkingConfigurationUpdate)
+		sinon.assert.notCalled(cancelTaskFn)
+	})
+
+	it("still cancels when an approval card waits during a mode switch", async () => {
+		const { controller, cancelTaskFn } = createController(TaskStatus.AWAITING_USER_INPUT, { acceptsText: false })
 
 		await controller.togglePlanActMode("plan")
 

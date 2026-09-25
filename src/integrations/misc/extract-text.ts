@@ -123,7 +123,8 @@ async function renderPageWithMarker(pageData: any): Promise<string> {
 }
 
 export async function extractTextFromPDF(filePath: string): Promise<string> {
-	const dataBuffer = await fs.readFile(filePath)
+	// pdf.js 1.10 can misparse a Node Buffer ("bad XRef entry"); a plain Uint8Array copy parses.
+	const dataBuffer = new Uint8Array(await fs.readFile(filePath))
 	const data = await pdf(dataBuffer, { pagerender: renderPageWithMarker })
 	return data.text
 }

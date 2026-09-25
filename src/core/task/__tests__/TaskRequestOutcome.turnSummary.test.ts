@@ -26,6 +26,7 @@ function baseCtx(taskState: TaskState): TaskRequestOutcomeContext {
 		taskMessenger: {} as any,
 		api: {} as any,
 		taskId: "task-1",
+		mode: "act",
 		executionProfile: {} as any,
 		postStateToWebview: async () => {},
 		abortTask: async () => {},

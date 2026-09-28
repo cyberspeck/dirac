@@ -1,15 +1,20 @@
 import { type DiracMessage, type UIActionButton, UIActionButtonType } from "@shared/ExtensionMessage"
+import { DiracAskResponse } from "@shared/WebviewMessage"
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import React, { useCallback, useEffect, useState } from "react"
 import { isNewTaskCard } from "../../utils/newTaskCard"
 import { useChatStore } from "@/features/chat/store/chatStore"
 import type { ChatState, MessageHandlers } from "../types/chatTypes"
 import { ButtonActionType } from "../utils/buttonConfig"
+import { waitingCardShortcut } from "../utils/cardShortcuts"
+import { isWaitingPermissionCard } from "../utils/placeholderText"
 
 interface ActionButtonsProps {
 	task?: DiracMessage
 	chatState: ChatState
 	messageHandlers: MessageHandlers
+	/** The chat view is not shown (e.g. settings open); its keyboard shortcuts stay off. */
+	isHidden?: boolean
 	scrollBehavior: {
 		scrollToBottomSmooth: () => void
 		scrollToTop: () => void
@@ -17,7 +22,7 @@ interface ActionButtonsProps {
 	}
 }
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({ task, chatState, messageHandlers, scrollBehavior }) => {
+const ActionButtons: React.FC<ActionButtonsProps> = ({ task, chatState, messageHandlers, isHidden, scrollBehavior }) => {
 	const {
 		inputValue,
 		selectedImages,
@@ -97,6 +102,28 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ task, chatState, messageH
 		window.addEventListener("keydown", handleKeyDown)
 		return () => window.removeEventListener("keydown", handleKeyDown)
 	}, [handleKeyDown, hasActiveButtons])
+
+	// Cmd/Ctrl+Enter and Cmd/Ctrl+Backspace press the waiting permission card's Accept and Reject, with the
+	// input as the note like a click. Capture phase, so the input's Enter handler never sends it as a message.
+	const permissionCardWaits = !isHidden && !!activeCard && isWaitingPermissionCard(activeCard)
+	useEffect(() => {
+		if (!permissionCardWaits) return
+		const onKeyDown = (event: KeyboardEvent) => {
+			const pressed = waitingCardShortcut(event)
+			if (!pressed) return
+			event.preventDefault()
+			event.stopPropagation()
+			handleActionClick(
+				pressed === "approve" ? DiracAskResponse.APPROVE : DiracAskResponse.REJECT,
+				undefined,
+				inputValue,
+				selectedImages,
+				selectedFiles,
+			)
+		}
+		window.addEventListener("keydown", onKeyDown, true)
+		return () => window.removeEventListener("keydown", onKeyDown, true)
+	}, [permissionCardWaits, handleActionClick, inputValue, selectedImages, selectedFiles])
 
 	if (!task) {
 		return null

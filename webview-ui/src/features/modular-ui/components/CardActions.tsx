@@ -4,6 +4,7 @@ import { DiracAskResponse } from "@shared/WebviewMessage"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/lib/utils"
 import { CheckIcon, XIcon } from "lucide-react"
+import { APPROVE_SHORTCUT, REJECT_SHORTCUT } from "../chat/utils/cardShortcuts"
 
 interface CardActionsProps {
 	card: Card
@@ -59,6 +60,7 @@ export const CardActions: React.FC<CardActionsProps> = ({ card, isActive, onActi
 							variant="success"
 							size="sm"
 							className="h-6 text-xs px-3 gap-1"
+							title={`Accept (${APPROVE_SHORTCUT})`}
 							onClick={() => onAction?.(DiracAskResponse.APPROVE)}>
 							<CheckIcon className="size-3" />
 							Accept
@@ -67,6 +69,7 @@ export const CardActions: React.FC<CardActionsProps> = ({ card, isActive, onActi
 							variant="danger"
 							size="sm"
 							className="h-6 text-xs px-3 gap-1"
+							title={`Reject (${REJECT_SHORTCUT})`}
 							onClick={() => onAction?.(DiracAskResponse.REJECT)}>
 							<XIcon className="size-3" />
 							Reject

@@ -97,7 +97,7 @@ function fakeEnv(files) {
     assert.equal(asked.length, 1)
     assert.equal(asked[0].options.category, "read")
     assert.deepEqual(asked[0].options.locations, [{ path: "a.md" }, { path: "b.md" }])
-    assert.match(out, /^a\.md: 2 words[^]*missing\.md: file not found[^]*b\.md: 1 words/)
+    assert.match(out, /^a\.md: 2 words[\s\S]*missing\.md: file not found[\s\S]*b\.md: 1 words/)
 
     approved = false
     assert.match(await tool.processCall({ paths: "a.md" }, env), /declined/)

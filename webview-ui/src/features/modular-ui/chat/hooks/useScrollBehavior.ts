@@ -1,4 +1,4 @@
-import { CardStatus, DiracMessage } from "@shared/ExtensionMessage"
+import { DiracMessage } from "@shared/ExtensionMessage"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { VirtuosoHandle } from "react-virtuoso"
 import { CHAT_CONSTANTS } from "../constants"
@@ -169,18 +169,30 @@ export function useScrollBehavior(
 		}
 	}, [messages.length])
 
-	// Scroll to bottom when a card requires user input (approval buttons appear)
-	const lastRenderedMessage = useChatStore((state) => state.lastMessage)
-	const lastCardStatusRef = useRef<string | undefined>()
+	// When a card starts waiting for the user, bring its end (where its buttons sit) into view. The card
+	// need not be the last message: in a chain of tool calls later cards, or hidden rows, can follow it.
+	const activeCardId = useChatStore((state) => state.uiActionState?.activeCardId)
+	const scrolledCardIdRef = useRef<string | undefined>()
 	useEffect(() => {
-		const lastMessage = lastRenderedMessage
-		if (!lastMessage) return
-		const currentStatus = lastMessage.content.type === "card" ? lastMessage.content.card.status : undefined
-		if (currentStatus === CardStatus.WAITING_FOR_INPUT && lastCardStatusRef.current !== CardStatus.WAITING_FOR_INPUT) {
-			scrollToBottomAuto()
+		if (!activeCardId) {
+			scrolledCardIdRef.current = undefined
+			return
 		}
-		lastCardStatusRef.current = currentStatus
-	}, [lastRenderedMessage, scrollToBottomAuto])
+		if (scrolledCardIdRef.current === activeCardId) return
+		const index = renderedMessageIds.indexOf(activeCardId)
+		if (index === -1) return
+		scrolledCardIdRef.current = activeCardId
+		if (index === renderedMessageIds.length - 1) {
+			scrollToBottomAuto()
+			return
+		}
+		// Following would re-anchor to the rows below and push the buttons out of view again.
+		stopFollowing()
+		cancelAnimationFrame(messageScrollRafIdRef.current)
+		messageScrollRafIdRef.current = requestAnimationFrame(() => {
+			virtuosoRef.current?.scrollToIndex({ index, align: "end", behavior: "auto" })
+		})
+	}, [activeCardId, renderedMessageIds, scrollToBottomAuto, stopFollowing])
 
 	const handleAtBottomStateChange = useCallback((isAtBottom: boolean) => {
 		isAtBottomRef.current = isAtBottom
@@ -305,7 +317,7 @@ export function useScrollBehavior(
 		isFollowingRef.current = true
 		isAtBottomRef.current = false
 		lastListHeightRef.current = 0
-		lastCardStatusRef.current = undefined
+		scrolledCardIdRef.current = undefined
 		scrollbarPointerRef.current = false
 		touchYRef.current = null
 		setShowScrollToBottom(false)

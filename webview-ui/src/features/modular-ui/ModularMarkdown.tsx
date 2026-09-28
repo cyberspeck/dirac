@@ -67,6 +67,11 @@ export const ModularMarkdown = memo(
 			)
 		}
 
+		// A whitespace-only text row would render as an empty bubble with a copy button that copies nothing.
+		if (!content.trim() && !images?.length && !files?.length) {
+			return null
+		}
+
 		return (
 			<WithCopyButton
 				className={cn(partial === true && "opacity-70")}

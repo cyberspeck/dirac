@@ -281,6 +281,30 @@ describe("useChatStore", () => {
 		expect(patchedApiStatus.content.status.cost).toBe(0.25)
 	})
 
+	it("keeps a whitespace-only text row hidden until real text is appended", () => {
+		const task: DiracMessage = { id: "task", ts: 0, content: { type: DiracMessageType.MARKDOWN, content: "task" } }
+		const blank: DiracMessage = { id: "blank", ts: 1, content: { type: DiracMessageType.MARKDOWN, content: "\n  " } }
+		useChatStore.getState().applyExtensionState({
+			diracMessages: [task, blank],
+			presentationSurfaceId: "task-1",
+			presentationOffset: 0,
+		})
+		expect(useChatStore.getState().visibleMessageIds).toEqual([])
+		expect(filterVisibleMessages([blank])).toEqual([])
+
+		useChatStore.getState().applyPresentationBatch({
+			surfaceId: "task-1",
+			operations: [{ offset: 1, type: "append_markdown", id: blank.id, text: "\n\t" }],
+		})
+		expect(useChatStore.getState().visibleMessageIds).toEqual([])
+
+		useChatStore.getState().applyPresentationBatch({
+			surfaceId: "task-1",
+			operations: [{ offset: 2, type: "append_markdown", id: blank.id, text: "reply text" }],
+		})
+		expect(useChatStore.getState().visibleMessageIds).toEqual([blank.id])
+	})
+
 	it("records append chunks without replacing the affected message and rejects gaps and stale surfaces", () => {
 		const stream: DiracMessage = {
 			id: "stream",

@@ -47,7 +47,7 @@ interface ChatState {
 function isVisibleMessage(message: DiracMessage, latestRequestStatusId?: string): boolean {
 	if (message.content.type === DiracMessageType.CARD && getSubagentUsage(message.content.card)) return false
 	if (message.content.type === DiracMessageType.MARKDOWN) {
-		return message.content.content !== "" || (message.content.images?.length ?? 0) > 0
+		return message.content.content.trim() !== "" || (message.content.images?.length ?? 0) > 0
 	}
 	if (message.content.type === DiracMessageType.API_STATUS) {
 		return (
@@ -317,7 +317,11 @@ function updateDerivedPresentation(
 		}
 	}
 
-	const appendMakesMessageVisible = operation.type === "append_markdown" && operation.text.length > 0
+	// Appends are buffered, so judge visibility on the text the row will show once materialized.
+	const appendMakesMessageVisible =
+		operation.type === "append_markdown" &&
+		after?.content.type === DiracMessageType.MARKDOWN &&
+		(after.content.content + (state.presentationAppends.get(after.id)?.chunks.join("") ?? "")).trim() !== ""
 	if (
 		index !== 0 &&
 		after &&

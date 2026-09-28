@@ -37,7 +37,7 @@ export function filterVisibleMessages(messages: DiracMessage[]): DiracMessage[] 
 		}
 
 		if (content.type === DiracMessageType.MARKDOWN) {
-			if ((content.content ?? "") === "" && (content.images?.length ?? 0) === 0) {
+			if ((content.content ?? "").trim() === "" && (content.images?.length ?? 0) === 0) {
 				return false
 			}
 		}

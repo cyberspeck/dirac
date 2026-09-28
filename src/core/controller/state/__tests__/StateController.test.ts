@@ -28,7 +28,6 @@ describe("StateController", () => {
 			clearSessionOverride: sinon.stub(),
 		} as any
 		const postStateToWebviewFn = sinon.stub().resolves()
-		const cancelTaskFn = sinon.stub().resolves()
 		const buildApiHandlerFn = sinon.stub() as any
 		const captureModeSwitchFn = sinon.stub()
 
@@ -39,15 +38,14 @@ describe("StateController", () => {
 			},
 			buildApiHandlerFn,
 			postStateToWebviewFn,
-			cancelTaskFn,
 			captureModeSwitchFn,
 		})
 
-		return { controller, task, stateManager, postStateToWebviewFn, cancelTaskFn }
+		return { controller, task, stateManager, postStateToWebviewFn }
 	}
 
 	it("switches mode without cancelling a completed task", async () => {
-		const { controller, task, stateManager, postStateToWebviewFn, cancelTaskFn } = createController(TaskStatus.COMPLETED)
+		const { controller, task, stateManager, postStateToWebviewFn } = createController(TaskStatus.COMPLETED)
 
 		const sentMessage = await controller.togglePlanActMode("plan")
 
@@ -56,32 +54,34 @@ describe("StateController", () => {
 		sinon.assert.calledWith(stateManager.setSessionOverride, "mode", "plan")
 		sinon.assert.calledOnce(postStateToWebviewFn)
 		sinon.assert.calledOnce(task.applyWorkingConfigurationUpdate)
-		sinon.assert.notCalled(cancelTaskFn)
 	})
 
-	it("still cancels an active task when switching mode", async () => {
-		const { controller, cancelTaskFn } = createController(TaskStatus.STREAMING_TEXT)
-
-		await controller.togglePlanActMode("plan")
-
-		sinon.assert.calledOnce(cancelTaskFn)
-	})
-
-	it("keeps a waiting question card when switching mode", async () => {
-		const { controller, task, cancelTaskFn } = createController(TaskStatus.AWAITING_USER_INPUT, { acceptsText: true })
+	it("switches mode while a request streams and leaves the task running", async () => {
+		const { controller, task } = createController(TaskStatus.STREAMING_TEXT)
 
 		const sentMessage = await controller.togglePlanActMode("plan")
 
 		sentMessage.should.equal(false)
 		sinon.assert.calledOnce(task.applyWorkingConfigurationUpdate)
-		sinon.assert.notCalled(cancelTaskFn)
+		task.taskState.status.should.equal(TaskStatus.STREAMING_TEXT)
 	})
 
-	it("still cancels when an approval card waits during a mode switch", async () => {
-		const { controller, cancelTaskFn } = createController(TaskStatus.AWAITING_USER_INPUT, { acceptsText: false })
+	it("keeps a waiting question card when switching mode", async () => {
+		const { controller, task } = createController(TaskStatus.AWAITING_USER_INPUT, { acceptsText: true })
 
-		await controller.togglePlanActMode("plan")
+		const sentMessage = await controller.togglePlanActMode("plan")
 
-		sinon.assert.calledOnce(cancelTaskFn)
+		sentMessage.should.equal(false)
+		sinon.assert.calledOnce(task.applyWorkingConfigurationUpdate)
+	})
+
+	it("keeps a waiting tool-approval card live when switching mode", async () => {
+		const { controller, task } = createController(TaskStatus.AWAITING_USER_INPUT, { acceptsText: false })
+
+		const sentMessage = await controller.togglePlanActMode("plan")
+
+		sentMessage.should.equal(false)
+		sinon.assert.calledOnce(task.applyWorkingConfigurationUpdate)
+		task.taskState.lastWaitingCardId.should.equal("card-1")
 	})
 })

@@ -4,7 +4,6 @@ import type { TelemetrySetting } from "@shared/TelemetrySetting"
 import type { Mode } from "@shared/storage/types"
 import { DiracAskResponse } from "@shared/WebviewMessage"
 import { PlanInteractionResponse } from "@shared/responseTool"
-import { TaskStatus } from "@shared/ExtensionMessage"
 import type { StateManager } from "@core/storage/StateManager"
 import { telemetryService } from "@/services/telemetry"
 import { persistModeSelection } from "./persistModeSelection"
@@ -14,7 +13,6 @@ export interface StateControllerDependencies {
 	get task(): import("@core/task").Task | undefined
 	buildApiHandlerFn: typeof buildApiHandler
 	postStateToWebviewFn: () => Promise<void>
-	cancelTaskFn: () => Promise<void>
 	captureModeSwitchFn: (taskId: string, mode: Mode) => void
 }
 
@@ -23,7 +21,6 @@ export class StateController {
 	private readonly getTask: () => import("@core/task").Task | undefined
 	private readonly buildApiHandlerFn: typeof buildApiHandler
 	private readonly postStateToWebviewFn: () => Promise<void>
-	private readonly cancelTaskFn: () => Promise<void>
 	private readonly captureModeSwitchFn: (taskId: string, mode: Mode) => void
 
 	constructor(deps: StateControllerDependencies) {
@@ -31,7 +28,6 @@ export class StateController {
 		this.getTask = () => deps.task
 		this.buildApiHandlerFn = deps.buildApiHandlerFn
 		this.postStateToWebviewFn = deps.postStateToWebviewFn
-		this.cancelTaskFn = deps.cancelTaskFn
 		this.captureModeSwitchFn = deps.captureModeSwitchFn
 	}
 
@@ -91,12 +87,8 @@ export class StateController {
 			}
 			return true
 		}
-		if (task.taskState.status === TaskStatus.COMPLETED) return false
-		// A question or plan card waiting for a reply survives the switch: the new mode is already
-		// installed on the task and reaches the model with the reply. Cancelling would orphan the card.
-		if (task.taskState.lastWaitingCardId && task.taskState.waitingCardAcceptsText) return false
-
-		await this.cancelTaskFn()
+		// Nothing is cancelled: a running request, tool or waiting card continues, and the new mode
+		// (already installed on the task) reaches the model with the next request.
 		return false
 	}
 

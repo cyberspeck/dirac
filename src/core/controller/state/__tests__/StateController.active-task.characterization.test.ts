@@ -56,7 +56,6 @@ describe("StateController active-task characterization", () => {
 			clearSessionOverride: sinon.stub().callsFake(() => events.push("clear-session-mode")),
 		} as any
 		const postStateToWebviewFn = sinon.stub().callsFake(async () => events.push("publish-state"))
-		const cancelTaskFn = sinon.stub().callsFake(async () => events.push("cancel-task"))
 		const buildApiHandlerFn = sinon.stub() as any
 		const captureModeSwitchFn = sinon.stub().callsFake(() => events.push("capture-telemetry"))
 		const controller = new StateController({
@@ -66,7 +65,6 @@ describe("StateController active-task characterization", () => {
 			},
 			buildApiHandlerFn,
 			postStateToWebviewFn,
-			cancelTaskFn,
 			captureModeSwitchFn,
 		})
 		return {
@@ -74,7 +72,6 @@ describe("StateController active-task characterization", () => {
 			task,
 			stateManager,
 			postStateToWebviewFn,
-			cancelTaskFn,
 			buildApiHandlerFn,
 			captureModeSwitchFn,
 			events,
@@ -83,7 +80,7 @@ describe("StateController active-task characterization", () => {
 
 	beforeEach(() => sinon.stub(apiModule, "buildApiHandler").returns({} as any))
 
-	it("commits the selected mode before publishing and cancelling an active streaming task", async () => {
+	it("commits the selected mode and publishes without interrupting an active streaming task", async () => {
 		const harness = createHarness({ status: TaskStatus.STREAMING_TEXT })
 
 		const result = await harness.controller.togglePlanActMode("plan")
@@ -91,10 +88,9 @@ describe("StateController active-task characterization", () => {
 		result.should.equal(false)
 		sinon.assert.calledOnce(harness.task!.applyWorkingConfigurationUpdate)
 		harness.task!.taskState.pendingModeNotice.mode.should.equal("plan")
-		sinon.assert.calledOnce(harness.cancelTaskFn)
+		sinon.assert.notCalled(harness.task!.submitCardResponse)
 		harness.events.indexOf("persist-global-mode").should.be.lessThan(harness.events.indexOf("commit-runtime"))
 		harness.events.indexOf("commit-runtime").should.be.lessThan(harness.events.indexOf("publish-state"))
-		harness.events.indexOf("publish-state").should.be.lessThan(harness.events.indexOf("cancel-task"))
 	})
 
 	it("turns a waiting Plan response into an approval only after the Task transition", async () => {
@@ -122,7 +118,6 @@ describe("StateController active-task characterization", () => {
 			["image"],
 			["file"],
 		)
-		sinon.assert.notCalled(harness.cancelTaskFn)
 		harness.events.indexOf("commit-runtime").should.be.lessThan(harness.events.indexOf("publish-state"))
 		harness.events.indexOf("publish-state").should.be.lessThan(harness.events.indexOf("submit-card"))
 	})
@@ -136,7 +131,6 @@ describe("StateController active-task characterization", () => {
 		sinon.assert.calledWithExactly(harness.stateManager.setGlobalState, "mode", "plan")
 		sinon.assert.calledWithExactly(harness.stateManager.setSessionOverride, "mode", "plan")
 		sinon.assert.calledWithExactly(harness.captureModeSwitchFn, "0", "plan")
-		sinon.assert.notCalled(harness.cancelTaskFn)
 	})
 
 	it("YOLO mode switching commits Act without cancelling or capturing a normal mode event", async () => {
@@ -148,7 +142,6 @@ describe("StateController active-task characterization", () => {
 		sinon.assert.calledWithExactly(harness.stateManager.setGlobalState, "mode", "act")
 		sinon.assert.calledWithExactly(harness.stateManager.setSessionOverride, "mode", "act")
 		sinon.assert.calledOnce(harness.task!.applyWorkingConfigurationUpdate)
-		sinon.assert.notCalled(harness.cancelTaskFn)
 		sinon.assert.notCalled(harness.captureModeSwitchFn)
 	})
 
@@ -162,7 +155,6 @@ describe("StateController active-task characterization", () => {
 		sinon.assert.notCalled(harness.stateManager.setSessionOverride)
 		sinon.assert.notCalled(harness.postStateToWebviewFn)
 		sinon.assert.notCalled(harness.captureModeSwitchFn)
-		sinon.assert.notCalled(harness.cancelTaskFn)
 	})
 
 	it("does not publish or capture telemetry when persistence fails", async () => {
@@ -174,7 +166,6 @@ describe("StateController active-task characterization", () => {
 		harness.events.should.not.containEql("commit-runtime")
 		sinon.assert.notCalled(harness.postStateToWebviewFn)
 		sinon.assert.notCalled(harness.captureModeSwitchFn)
-		sinon.assert.notCalled(harness.cancelTaskFn)
 	})
 
 	it("rolls back global and session mode when the session write throws after mutation", async () => {

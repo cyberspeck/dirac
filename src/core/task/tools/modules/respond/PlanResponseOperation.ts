@@ -55,11 +55,21 @@ export async function presentPlanForApproval(response: string, env: IToolEnviron
 		)
 	}
 
+	// A switch to Act while this Plan request was still streaming already answers the card:
+	// continue as if the switch had come while the card waited.
+	const switchedToActMidRequest =
+		env.config.mode === "plan" && env.orchestration.getTaskState("pendingModeNotice")?.mode === "act"
+	if (switchedToActMidRequest) env.orchestration.setTaskState("didRespondToPlanAskBySwitchingMode", true)
+
 	const {
 		text,
 		images,
 		files: planResponseFiles,
-	} = await cardHandle.waitForInteraction().finally(async () => {
+	} = await (
+		switchedToActMidRequest
+			? Promise.resolve({ text: PlanInteractionResponse.MODE_TOGGLE, images: undefined, files: undefined })
+			: cardHandle.waitForInteraction()
+	).finally(async () => {
 		env.orchestration.setTaskState("isAwaitingPlanResponse", false)
 		await env.ui.publishState()
 	})

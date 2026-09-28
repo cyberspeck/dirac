@@ -84,6 +84,22 @@ describe("plan response operation", () => {
 		assert.ok(card.finalize.calledWith(CardStatus.SUCCESS, true))
 		assert.match(result, /Go ahead and execute/)
 	})
+	it("continues without waiting when the user switched to act mode while the plan streamed", async () => {
+		const { card, env } = createMocks("plan")
+		env.config.yoloModeToggled = false
+		env.orchestration.setTaskState("pendingModeNotice" as any, { mode: "act" })
+
+		const result = await presentPlanForApproval("1. Inspect the flow", env as any)
+
+		assert.equal(card.waitForInteraction.callCount, 0)
+		assert.equal(env.orchestration.switchToActMode.callCount, 0)
+		assert.ok(card.update.calledWith({ header: "Plan Accepted" }))
+		assert.ok(card.finalize.calledWith(CardStatus.SUCCESS, true))
+		assert.match(JSON.stringify(result), /switched to ACT MODE, so you may now proceed/)
+		assert.equal(env.orchestration.getTaskState("didRespondToPlanAskBySwitchingMode"), false)
+		assert.equal(env.orchestration.getTaskState("isAwaitingPlanResponse"), false)
+	})
+
 	it("clears the plan waiting flag when a plain text response interrupts the plan tool", async () => {
 		const { card, env } = createMocks("plan")
 		env.config.yoloModeToggled = false

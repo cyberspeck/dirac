@@ -85,37 +85,57 @@ export function create() {
                 return "Error: paths is missing."
             }
 
-            const lines: string[] = []
-            const total: Counts = { charsWithSpaces: 0, charsWithoutSpaces: 0, words: 0, lines: 0 }
-            let counted = 0
-
+            // Check every path first, so one card asks for all readable files.
+            const entries: ({ note: string } | { absolutePath: string; displayPath: string })[] = []
             for (const requested of paths) {
                 const { absolutePath, displayPath } = await env.workspace.resolvePath(requested)
                 // Custom tools get raw fs through env.workspace, which does not apply .diracignore; the
                 // built-ins each check it at the call site (WriteToFileTool.ts:114), so this one must too.
                 if (env.config?.services?.diracIgnoreController?.validateAccess(absolutePath) === false) {
-                    lines.push(`${displayPath}: blocked by .diracignore.`)
+                    entries.push({ note: `${displayPath}: blocked by .diracignore.` })
                     continue
                 }
 
                 const info = await env.workspace.getFileInfo(absolutePath)
                 if (!info?.exists) {
-                    lines.push(`${displayPath}: file not found.`)
+                    entries.push({ note: `${displayPath}: file not found.` })
                     continue
                 }
                 if (!info.isFile) {
-                    lines.push(`${displayPath}: not a regular file (a directory?).`)
+                    entries.push({ note: `${displayPath}: not a regular file (a directory?).` })
                     continue
                 }
                 if (typeof info.size === "number" && info.size > MAX_BYTES) {
-                    lines.push(`${displayPath}: skipped, the file is larger than ${MAX_BYTES} bytes.`)
+                    entries.push({ note: `${displayPath}: skipped, the file is larger than ${MAX_BYTES} bytes.` })
                     continue
                 }
+                entries.push({ absolutePath, displayPath })
+            }
 
-                const content = await env.workspace.readFile(absolutePath)
+            const files = entries.filter((e): e is { absolutePath: string; displayPath: string } => "absolutePath" in e)
+            // A read, so the "read files" setting governs it, like the other workspace read tools.
+            if (files.length > 0 && env.interaction?.askPermission) {
+                const { approved } = await env.interaction.askPermission(
+                    files.length === 1 ? `Count ${files[0].displayPath}?` : `Count ${files.length} files?`,
+                    { category: "read", locations: files.map((f) => ({ path: f.absolutePath })) },
+                )
+                if (!approved) {
+                    return "Count declined. The files were NOT read. Do not retry and do not call read_file instead; ask the user."
+                }
+            }
+
+            const lines: string[] = []
+            const total: Counts = { charsWithSpaces: 0, charsWithoutSpaces: 0, words: 0, lines: 0 }
+            let counted = 0
+            for (const entry of entries) {
+                if ("note" in entry) {
+                    lines.push(entry.note)
+                    continue
+                }
+                const content = await env.workspace.readFile(entry.absolutePath)
                 const c = countText(typeof content === "string" ? content : String(content ?? ""))
 
-                lines.push(formatRow(displayPath, c))
+                lines.push(formatRow(entry.displayPath, c))
                 total.charsWithSpaces += c.charsWithSpaces
                 total.charsWithoutSpaces += c.charsWithoutSpaces
                 total.words += c.words

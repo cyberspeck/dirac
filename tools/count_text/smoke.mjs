@@ -81,6 +81,32 @@ function fakeEnv(files) {
     assert.match(out, /Total \(2 files\): 3 words/)
 }
 
+// One read card per call, listing every readable file; a declined card reads nothing.
+{
+    const tool = create()
+    const asked = []
+    const env = fakeEnv({ "a.md": "one two", "b.md": "three" })
+    let approved = true
+    env.workspace.readFile = async (p) => {
+        assert.ok(approved, "a declined count must not read")
+        return { "a.md": "one two", "b.md": "three" }[p]
+    }
+    env.interaction = { askPermission: async (question, options) => (asked.push({ question, options }), { approved }) }
+
+    const out = await tool.processCall({ paths: "a.md, missing.md, b.md" }, env)
+    assert.equal(asked.length, 1)
+    assert.equal(asked[0].options.category, "read")
+    assert.deepEqual(asked[0].options.locations, [{ path: "a.md" }, { path: "b.md" }])
+    assert.match(out, /^a\.md: 2 words[^]*missing\.md: file not found[^]*b\.md: 1 words/)
+
+    approved = false
+    assert.match(await tool.processCall({ paths: "a.md" }, env), /declined/)
+
+    asked.length = 0
+    await tool.processCall({ paths: "missing.md" }, env)
+    assert.equal(asked.length, 0, "no card when nothing is readable")
+}
+
 // Missing argument is an error, not a crash.
 {
     const tool = create()

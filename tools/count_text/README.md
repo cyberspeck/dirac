@@ -34,7 +34,9 @@ does not load.
 
 ## Portability
 
-Uses only `env.workspace.resolvePath` / `getFileInfo` / `readFile`. No subprocess, no shell
+Uses only `env.workspace.resolvePath` / `getFileInfo` / `readFile`, plus one
+`env.interaction.askPermission` per call (category `read`, every readable file as a location), so the
+read card shows in the chat and the "read files" auto-approval setting governs it. No subprocess, no shell
 quoting, no platform-specific paths — works on Windows, macOS and Linux unchanged.
 
 ## Tests

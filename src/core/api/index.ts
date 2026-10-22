@@ -19,7 +19,8 @@ import type {
     ApiConversationCompactionResult,
     ApiConversationRequestOptions,
 } from "./conversation"
-import { buildOpenAiEndpointDiagnostics, type EndpointDiagnostics, warnOnProfileMismatch } from "./endpoint-diagnostics"
+import { buildOpenAiEndpointDiagnostics, type EndpointDiagnostics } from "./endpoint-diagnostics"
+import { warnOnProfileMismatch } from "./endpoint-mismatch-warning"
 import { modelProviderSelectionUpdates } from "./modelProviderSelection"
 import { AIhubmixHandler } from "./providers/aihubmix"
 import { AnthropicHandler } from "./providers/anthropic"

@@ -1,5 +1,3 @@
-import { Logger } from "@/shared/services/Logger"
-
 /**
  * Diagnostics describing which endpoint an OpenAI-compatible handler talks to.
  * All URLs are already sanitised (origin + pathname only).
@@ -21,8 +19,9 @@ export function sanitizeEndpoint(url: string | undefined): string {
 	}
 	try {
 		const parsed = new URL(trimmed)
-		// A scheme-less "host:port/path" can parse with the host as scheme and an opaque origin.
-		if (parsed.origin !== "null") {
+		// Only trust origin for http(s)/ws(s). A scheme-less "host:port/path" parses with the host as scheme
+		// and an opaque origin, and "blob:https://user:pw@host/x" has an origin that still carries userinfo.
+		if (/^(https?|wss?):$/.test(parsed.protocol) && parsed.origin !== "null") {
 			return (parsed.origin + parsed.pathname).replace(/\/+$/, "")
 		}
 	} catch {
@@ -76,29 +75,4 @@ export function formatEndpointDiagnostics(diag: EndpointDiagnostics | undefined,
 		)
 	}
 	return lines.join("\n")
-}
-
-const warnedProfileMismatches = new Set<string>()
-
-/**
- * Warn once per extension session per distinct mismatch. The handler is rebuilt per request,
- * so there is no stable per-task hook to dedupe on.
- */
-export function warnOnProfileMismatch(diag: EndpointDiagnostics | undefined): void {
-	const mismatch = diag?.profileMismatch
-	if (!mismatch) {
-		return
-	}
-	const key = `${mismatch.profileName}|${mismatch.profileUrl}|${mismatch.fieldUrl}`
-	if (warnedProfileMismatches.has(key)) {
-		return
-	}
-	warnedProfileMismatches.add(key)
-	Logger.warn(
-		`OpenAI-compatible profile "${mismatch.profileName}" uses ${mismatch.profileUrl} but the Base URL field shows ${mismatch.fieldUrl}; requests go to the profile URL.`,
-	)
-}
-
-export function __resetProfileMismatchWarningsForTest(): void {
-	warnedProfileMismatches.clear()
 }

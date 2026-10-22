@@ -1,8 +1,8 @@
 import { strict as assert } from "node:assert"
-import { afterEach, beforeEach, describe, it } from "mocha"
-import sinon from "sinon"
 import { Logger } from "@shared/services/Logger"
 import { DiracAskResponse } from "@shared/WebviewMessage"
+import { afterEach, beforeEach, describe, it } from "mocha"
+import sinon from "sinon"
 import { handleApiRequestError, type TaskRequestOutcomeContext } from "../TaskRequestOutcome"
 import { TaskState } from "../TaskState"
 
@@ -133,7 +133,7 @@ describe("handleApiRequestError diagnostics", () => {
 			details: { echoed: SENTINEL },
 			request: { messages: [{ role: "user", content: SENTINEL }], headers: { authorization: `Bearer ${API_KEY}` } },
 		})
-		// message text must not reach the log, so keep the sentinel out of the message in the card assertions
+		// the sentinel is deliberately in the error message, details and request: none of it may reach the log
 		await handleApiRequestError(ctx, params(error))
 
 		const calls = errorLog.getCalls().map((c) => c.args)

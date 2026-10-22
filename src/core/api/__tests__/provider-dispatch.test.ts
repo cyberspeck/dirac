@@ -100,6 +100,34 @@ describe("API Provider Dispatch (original)", () => {
 			diag!.profileMismatch!.profileName.should.equal("p1")
 			diag!.profileMismatch!.fieldUrl.should.equal("https://192.0.2.22:11444/v1")
 		})
+
+		describe("separate Plan/Act profiles", () => {
+			const planUrl = "https://192.0.2.10:11444/v1"
+			const actUrl = "https://192.0.2.20:11444/v1"
+			const modelInfo = { maxTokens: 4096, contextWindow: 32768, supportsImages: false, supportsPromptCache: false }
+			const config: ApiConfiguration = {
+				apiProvider: "openai",
+				openAiCompatibleProfiles: [
+					{ name: "p1", baseUrl: planUrl, modelId: "m", modelInfo },
+					{ name: "p2", baseUrl: actUrl, modelId: "m", modelInfo },
+				],
+				planModeOpenAiProfileName: "p1",
+				actModeOpenAiProfileName: "p2",
+				openAiBaseUrl: planUrl,
+			}
+
+			it("reports no mismatch for act when the field holds the plan profile URL", () => {
+				const diag = buildApiHandler(config, "act").getEndpointDiagnostics!()
+				diag!.endpoint.should.equal(actUrl)
+				;(diag!.profileMismatch === undefined).should.be.true()
+			})
+
+			it("reports no mismatch for plan when the field holds the plan profile URL", () => {
+				const diag = buildApiHandler(config, "plan").getEndpointDiagnostics!()
+				diag!.endpoint.should.equal(planUrl)
+				;(diag!.profileMismatch === undefined).should.be.true()
+			})
+		})
 	})
 
 	it("returns a handler for gemini provider", () => {

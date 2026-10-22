@@ -90,6 +90,47 @@ describe("endpoint diagnostics", () => {
 			})!.should.eql({ endpoint: "https://192.0.2.28:11444/v1" })
 		})
 
+		describe("other mode's profile", () => {
+			const base = {
+				profile: { name: "p1", baseUrl: "https://192.0.2.28:11444/v1" },
+				fieldUrl: "https://192.0.2.22:11444/v1",
+				resolvedUrl: "https://192.0.2.28:11444/v1",
+			}
+
+			it("reports no mismatch when the field equals the other mode's profile URL", () => {
+				const diag = buildOpenAiEndpointDiagnostics({
+					...base,
+					otherModeProfile: { name: "p2", baseUrl: "https://192.0.2.22:11444/v1" },
+				})
+				diag!.should.eql({ endpoint: "https://192.0.2.28:11444/v1" })
+			})
+
+			it("still reports a mismatch when the field matches neither profile", () => {
+				const diag = buildOpenAiEndpointDiagnostics({
+					...base,
+					otherModeProfile: { name: "p2", baseUrl: "https://192.0.2.30:11444/v1" },
+				})
+				diag!.profileMismatch!.should.eql({
+					profileName: "p1",
+					profileUrl: "https://192.0.2.28:11444/v1",
+					fieldUrl: "https://192.0.2.22:11444/v1",
+				})
+			})
+
+			it("reports a mismatch when there is no other mode profile", () => {
+				const diag = buildOpenAiEndpointDiagnostics(base)
+				diag!.profileMismatch!.profileName.should.equal("p1")
+			})
+
+			it("treats a trailing-slash variant of the other profile URL as equal", () => {
+				const diag = buildOpenAiEndpointDiagnostics({
+					...base,
+					otherModeProfile: { name: "p2", baseUrl: "https://192.0.2.22:11444/v1/" },
+				})
+				diag!.should.eql({ endpoint: "https://192.0.2.28:11444/v1" })
+			})
+		})
+
 		it("returns undefined when the resolved URL is blank", () => {
 			;(buildOpenAiEndpointDiagnostics({ resolvedUrl: "" }) === undefined).should.be.true()
 			;(buildOpenAiEndpointDiagnostics({ resolvedUrl: undefined }) === undefined).should.be.true()

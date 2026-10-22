@@ -41,8 +41,13 @@ export function sanitizeEndpoint(url: string | undefined): string {
 	return result.replace(/\/+$/, "")
 }
 
+/**
+ * `otherModeProfile` is the profile selected for the other of Plan/Act. The single Base URL field can belong to either
+ * mode's profile, so it only counts as drift when it equals neither of them.
+ */
 export function buildOpenAiEndpointDiagnostics(args: {
 	profile?: { name: string; baseUrl: string }
+	otherModeProfile?: { name: string; baseUrl: string }
 	fieldUrl?: string
 	resolvedUrl?: string
 }): EndpointDiagnostics | undefined {
@@ -54,7 +59,8 @@ export function buildOpenAiEndpointDiagnostics(args: {
 	const fieldUrl = sanitizeEndpoint(args.fieldUrl)
 	if (args.profile && fieldUrl) {
 		const profileUrl = sanitizeEndpoint(args.profile.baseUrl)
-		if (profileUrl !== fieldUrl) {
+		const otherModeUrl = args.otherModeProfile ? sanitizeEndpoint(args.otherModeProfile.baseUrl) : undefined
+		if (profileUrl !== fieldUrl && otherModeUrl !== fieldUrl) {
 			diagnostics.profileMismatch = { profileName: args.profile.name, profileUrl, fieldUrl }
 		}
 	}

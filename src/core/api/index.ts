@@ -126,6 +126,7 @@ export function resolveModeConfig(options: Omit<ApiConfiguration, "apiProvider">
 		openAiModelId: isPlan ? options.planModeOpenAiModelId : options.actModeOpenAiModelId,
 		openAiModelInfo: isPlan ? options.planModeOpenAiModelInfo : options.actModeOpenAiModelInfo,
 		openAiProfileName: isPlan ? options.planModeOpenAiProfileName : options.actModeOpenAiProfileName,
+		otherModeOpenAiProfileName: isPlan ? options.actModeOpenAiProfileName : options.planModeOpenAiProfileName,
 		lmStudioModelId: isPlan ? options.planModeLmStudioModelId : options.actModeLmStudioModelId,
 		requestyModelId: isPlan ? options.planModeRequestyModelId : options.actModeRequestyModelId,
 		requestyModelInfo: isPlan ? options.planModeRequestyModelInfo : options.actModeRequestyModelInfo,
@@ -228,6 +229,9 @@ const PROVIDER_REGISTRY: Record<
 				"Select an available profile before retrying.",
 			)
 		}
+		const otherModeProfile = mc.otherModeOpenAiProfileName
+			? cfg.openAiCompatibleProfiles?.find((p) => p.name === mc.otherModeOpenAiProfileName)
+			: undefined
 		const openAiBaseUrl = profile ? profile.baseUrl : cfg.openAiBaseUrl
 		const openAiApiKey = profile ? profile.apiKey : cfg.openAiApiKey
 		const openAiModelId = mc.openAiModelId ?? profile?.modelId
@@ -251,6 +255,7 @@ const PROVIDER_REGISTRY: Record<
 		}
 		const endpointDiagnostics = buildOpenAiEndpointDiagnostics({
 			profile,
+			otherModeProfile,
 			fieldUrl: cfg.openAiBaseUrl,
 			resolvedUrl: openAiBaseUrl,
 		})

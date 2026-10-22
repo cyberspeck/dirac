@@ -467,7 +467,7 @@ export async function recursivelyMakeDiracRequests(
 			const card = await ctx.taskMessenger.createCard({
 				status: CardStatus.ERROR,
 				header: "Task Error",
-				body: `The task encountered an unexpected error and had to stop.\n\n${diracError.toDisplayMessage()}`,
+				body: `The task encountered an unexpected error and had to stop.\n\n${diracError.toDiagnosticDisplayMessage(ctx.api.getEndpointDiagnostics?.())}`,
 			})
 			await card.finalize(CardStatus.ERROR)
 		} catch (sayError) {

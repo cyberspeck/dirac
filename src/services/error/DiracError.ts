@@ -1,4 +1,6 @@
 import { serializeError } from "serialize-error"
+import type { EndpointDiagnostics } from "../../core/api/endpoint-diagnostics"
+import { formatEndpointDiagnostics } from "../../core/api/endpoint-diagnostics"
 import { checkContextWindowExceededError } from "../../core/context/context-management/context-error-handling"
 
 import { DIRAC_ACCOUNT_AUTH_ERROR_MESSAGE } from "../../shared/DiracAccount"
@@ -124,6 +126,23 @@ export class DiracError extends Error {
 
 		// For other errors, return the message without internal fields
 		return this.message
+	}
+
+	/**
+	 * The low-level cause of the failure (for example ECONNREFUSED), when the provider reported one.
+	 */
+	get causeCode(): string | undefined {
+		return this._error.code
+	}
+
+	/**
+	 * toDisplayMessage() plus a line naming the endpoint, the cause code and any profile/field mismatch.
+	 * Only sanitised URLs and the error code are added: never request content, headers or keys.
+	 */
+	toDiagnosticDisplayMessage(diag?: EndpointDiagnostics): string {
+		const base = this.toDisplayMessage()
+		const line = formatEndpointDiagnostics(diag, this.causeCode)
+		return line ? `${base}\n\n${line}` : base
 	}
 
 	/**

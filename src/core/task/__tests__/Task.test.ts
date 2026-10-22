@@ -14,6 +14,7 @@ import * as path from "path"
 import sinon from "sinon"
 import { HostProvider } from "@/hosts/host-provider"
 import { StateManager } from "../../storage/StateManager"
+import { expectLoggerErrors } from "@/test/loggerGuard"
 import { Task } from "../index"
 
 describe("Task (original)", () => {
@@ -644,6 +645,8 @@ describe("Task (original)", () => {
 	})
 
 	it("reinitializes the task when a user cancels an API failure", async () => {
+		// a failed request logs one [API] request failed line
+		expectLoggerErrors()
 		const reinitExistingTaskFromId = sandbox.stub().resolves()
 		const task = new Task({
 			controller: createMockController(),

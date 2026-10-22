@@ -1,6 +1,7 @@
 import { setTimeout as setTimeoutPromise } from "node:timers/promises"
 import type { ApiHandler } from "@core/api"
 import type { ApiStream } from "@core/api/transform/stream"
+import { sanitizeEndpoint } from "@core/api/endpoint-diagnostics"
 import { formatResponse } from "@core/formatResponse"
 import type { ICheckpointManager } from "@integrations/checkpoints/types"
 import { processFilesIntoText } from "@integrations/misc/extract-text"
@@ -10,6 +11,7 @@ import { DiracContent, DiracTextContentBlock } from "@shared/messages/content"
 import type { DiracMessageModelInfo } from "@shared/messages/metrics"
 import type { Mode } from "@shared/storage/types"
 import { isMutatingTool } from "@shared/tools"
+import { Logger } from "@shared/services/Logger"
 import { DiracAskResponse } from "@shared/WebviewMessage"
 import pWaitFor from "p-wait-for"
 import type { MessageStateHandler } from "./message-state"
@@ -49,6 +51,14 @@ export interface TaskRequestOutcomeContext {
 	}) => Promise<boolean>
 }
 
+/** One whitespace-free token for the log line; "-" when there is no value. */
+function logToken(value: unknown): string {
+	if (value === undefined || value === null || value === "") {
+		return "-"
+	}
+	return String(value).replace(/\s+/g, "_").slice(0, 120) || "-"
+}
+
 export async function handleApiRequestError(
 	ctx: TaskRequestOutcomeContext,
 	params: {
@@ -63,6 +73,16 @@ export async function handleApiRequestError(
 ): Promise<boolean> {
 	const { error, model, providerId } = params
 	const diracError = DiracError.transform(error, model.id, providerId)
+	const endpointDiagnostics = ctx.api.getEndpointDiagnostics?.()
+
+	// Fixed fields only: never message text, error details, request body, headers or keys.
+	Logger.error(
+		`[API] request failed provider=${logToken(providerId)} model=${logToken(model.id)} ` +
+			`endpoint=${logToken(sanitizeEndpoint(endpointDiagnostics?.endpoint))} ` +
+			`status=${logToken(diracError._error.status)} code=${logToken(diracError.causeCode)} ` +
+			`request_id=${logToken(diracError._error.request_id)}` +
+			(endpointDiagnostics?.profileMismatch ? ` mismatch=${logToken(endpointDiagnostics.profileMismatch.profileName)}` : ""),
+	)
 
 	if (diracError.isErrorType(DiracErrorType.ContextWindowExceeded)) {
 		await ctx.handleContextWindowExceededError()
@@ -149,14 +169,14 @@ export async function handleApiRequestError(
 			await ctx.taskMessenger.createCard({
 				status: CardStatus.ERROR,
 				header: "API Error (Payment Required)",
-				body: diracError.toDisplayMessage(),
+				body: diracError.toDiagnosticDisplayMessage(endpointDiagnostics),
 			})
 		}
 		if (isAuthError) {
 			await ctx.taskMessenger.createCard({
 				status: CardStatus.ERROR,
 				header: "API Error (Authentication)",
-				body: diracError.toDisplayMessage(),
+				body: diracError.toDiagnosticDisplayMessage(endpointDiagnostics),
 			})
 		}
 		ctx.taskState.status = TaskStatus.AWAITING_USER_INPUT
@@ -164,7 +184,7 @@ export async function handleApiRequestError(
 		const cardHandle = await ctx.taskMessenger.createCard({
 			requireApproval: true,
 			header: "API Request Failed",
-			body: diracError.toDisplayMessage(),
+			body: diracError.toDiagnosticDisplayMessage(endpointDiagnostics),
 			actions: [
 				{ label: "Retry", value: DiracAskResponse.APPROVE, primary: true },
 				{ label: "Cancel", value: DiracAskResponse.REJECT },

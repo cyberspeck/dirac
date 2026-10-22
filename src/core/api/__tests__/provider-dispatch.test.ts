@@ -71,6 +71,37 @@ describe("API Provider Dispatch (original)", () => {
 		handler.should.have.property("createMessage")
 	})
 
+	describe("openai endpoint diagnostics", () => {
+		const profileConfig = (profileUrl: string): ApiConfiguration => ({
+			apiProvider: "openai",
+			openAiCompatibleProfiles: [
+				{
+					name: "p1",
+					baseUrl: profileUrl,
+					modelId: "m",
+					modelInfo: { maxTokens: 4096, contextWindow: 32768, supportsImages: false, supportsPromptCache: false },
+				},
+			],
+			actModeOpenAiProfileName: "p1",
+			openAiBaseUrl: "https://192.0.2.22:11444/v1",
+		})
+
+		it("attaches endpoint diagnostics to the openai handler", () => {
+			const handler = buildApiHandler(profileConfig("https://192.0.2.28:11444/v1"), "act")
+			const diag = handler.getEndpointDiagnostics!()
+			diag!.endpoint.should.equal("https://192.0.2.28:11444/v1")
+			diag!.profileMismatch!.fieldUrl.should.equal("https://192.0.2.22:11444/v1")
+		})
+
+		it("attaches endpoint diagnostics to the openai responses handler", () => {
+			const handler = buildApiHandler(profileConfig("https://192.0.2.28:11444/v1/responses"), "act")
+			const diag = handler.getEndpointDiagnostics!()
+			diag!.endpoint.should.equal("https://192.0.2.28:11444/v1/responses")
+			diag!.profileMismatch!.profileName.should.equal("p1")
+			diag!.profileMismatch!.fieldUrl.should.equal("https://192.0.2.22:11444/v1")
+		})
+	})
+
 	it("returns a handler for gemini provider", () => {
 		const config: ApiConfiguration = {
 			apiProvider: "gemini",

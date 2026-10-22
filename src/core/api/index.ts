@@ -19,6 +19,7 @@ import type {
     ApiConversationCompactionResult,
     ApiConversationRequestOptions,
 } from "./conversation"
+import { buildOpenAiEndpointDiagnostics, type EndpointDiagnostics, warnOnProfileMismatch } from "./endpoint-diagnostics"
 import { modelProviderSelectionUpdates } from "./modelProviderSelection"
 import { AIhubmixHandler } from "./providers/aihubmix"
 import { AnthropicHandler } from "./providers/anthropic"
@@ -89,6 +90,8 @@ export interface ApiHandler {
 	shouldEstimateCost?(): boolean
 	getModel(): ApiHandlerModel
 	getApiStreamUsage?(): Promise<ApiStreamUsageChunk | undefined>
+	/** The resolved endpoint (sanitised) and any saved-profile vs Base URL field mismatch. */
+	getEndpointDiagnostics?(): EndpointDiagnostics | undefined
 	abort?(): void
 }
 
@@ -245,9 +248,17 @@ const PROVIDER_REGISTRY: Record<
 		if (apiKey) {
 			Logger.info(`Using OpenAI API key (from ${cfg.openAiCompatibleCustomApiKey ? "custom key" : "standard key"})`)
 		}
+		const endpointDiagnostics = buildOpenAiEndpointDiagnostics({
+			profile,
+			fieldUrl: cfg.openAiBaseUrl,
+			resolvedUrl: openAiBaseUrl,
+		})
+		warnOnProfileMismatch(endpointDiagnostics)
+		const withDiagnostics = <T extends ApiHandler>(handler: T): T =>
+			Object.assign(handler, { getEndpointDiagnostics: () => endpointDiagnostics })
 		if (openAiBaseUrl?.replace(/\/+$/, "").endsWith("/responses")) {
 			const normalizedBaseUrl = openAiBaseUrl.replace(/\/responses\/?$/, "")
-			return new OpenAiResponsesCompatibleHandler({
+			const handler = new OpenAiResponsesCompatibleHandler({
 				onRetryAttempt: cfg.onRetryAttempt,
 				disableRetries: cfg.disableRetries,
 				openAiApiKey: apiKey,
@@ -258,8 +269,9 @@ const PROVIDER_REGISTRY: Record<
 				reasoningEffort: mc.reasoningEffort,
 				enableParallelToolCalling: cfg.enableParallelToolCalling,
 			})
+			return withDiagnostics(handler)
 		}
-		return new OpenAiHandler({
+		const handler = new OpenAiHandler({
 			onRetryAttempt: cfg.onRetryAttempt,
 			disableRetries: cfg.disableRetries,
 			openAiApiKey: apiKey,
@@ -271,6 +283,7 @@ const PROVIDER_REGISTRY: Record<
 			reasoningEffort: mc.reasoningEffort,
 			enableParallelToolCalling: cfg.enableParallelToolCalling,
 		})
+		return withDiagnostics(handler)
 	},
 	lmstudio: (cfg, mc) =>
 		new LmStudioHandler({

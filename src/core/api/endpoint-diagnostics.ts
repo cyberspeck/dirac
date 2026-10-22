@@ -28,12 +28,18 @@ export function sanitizeEndpoint(url: string | undefined): string {
 	} catch {
 		// fall through to the best-effort cleanup
 	}
+	// Drop userinfo first: a password may itself contain "?" or "#", which must not end up in the output.
 	let result = trimmed
+	const firstSlash = result.indexOf("/")
+	const authorityEnd = firstSlash >= 0 ? firstSlash : result.length
+	const at = result.lastIndexOf("@", authorityEnd)
+	if (at >= 0) {
+		result = result.slice(at + 1)
+	}
 	const cut = result.search(/[?#]/)
 	if (cut >= 0) {
 		result = result.slice(0, cut)
 	}
-	result = result.slice(result.lastIndexOf("@") + 1)
 	return result.replace(/\/+$/, "")
 }
 

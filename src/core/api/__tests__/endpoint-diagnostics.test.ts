@@ -24,6 +24,16 @@ describe("endpoint diagnostics", () => {
 			sanitizeEndpoint("user:pw@192.0.2.10:11434/v1?k=1").should.equal("192.0.2.10:11434/v1")
 		})
 
+		it("drops userinfo before cutting the query or hash in the fallback", () => {
+			for (const input of ["user:p#w@192.0.2.10:11434/v1", "user:p?w@192.0.2.10:11434/v1?k=1"]) {
+				const out = sanitizeEndpoint(input)
+				out.should.equal("192.0.2.10:11434/v1")
+				out.should.not.containEql("user")
+				out.should.not.containEql("p")
+				out.should.not.containEql("w")
+			}
+		})
+
 		it("returns an empty string for blank or missing input", () => {
 			sanitizeEndpoint("").should.equal("")
 			sanitizeEndpoint("   ").should.equal("")

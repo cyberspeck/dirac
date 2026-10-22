@@ -34,6 +34,14 @@ describe("endpoint diagnostics", () => {
 			}
 		})
 
+		it("drops userinfo containing a slash in the fallback", () => {
+			sanitizeEndpoint("user:p/w@192.0.2.10:11434/v1").should.equal("192.0.2.10:11434/v1")
+			const out = sanitizeEndpoint("https://user:p/w@192.0.2.10:11434/v1")
+			out.should.not.containEql("user")
+			out.should.not.containEql("p/w")
+			out.should.endWith("192.0.2.10:11434/v1")
+		})
+
 		it("returns an empty string for blank or missing input", () => {
 			sanitizeEndpoint("").should.equal("")
 			sanitizeEndpoint("   ").should.equal("")

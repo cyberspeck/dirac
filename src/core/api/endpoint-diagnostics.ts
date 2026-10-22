@@ -28,11 +28,10 @@ export function sanitizeEndpoint(url: string | undefined): string {
 	} catch {
 		// fall through to the best-effort cleanup
 	}
-	// Drop userinfo first: a password may itself contain "?" or "#", which must not end up in the output.
+	// Drop userinfo first, up to the last "@" anywhere: a password may itself contain "?", "#" or "/".
+	// Over-redacting (for example losing a scheme prefix) is acceptable, leaking userinfo is not.
 	let result = trimmed
-	const firstSlash = result.indexOf("/")
-	const authorityEnd = firstSlash >= 0 ? firstSlash : result.length
-	const at = result.lastIndexOf("@", authorityEnd)
+	const at = result.lastIndexOf("@")
 	if (at >= 0) {
 		result = result.slice(at + 1)
 	}

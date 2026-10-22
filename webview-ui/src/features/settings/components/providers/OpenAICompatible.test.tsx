@@ -96,4 +96,101 @@ describe("OpenAICompatibleProvider profiles", () => {
 		expect(patch).toHaveProperty("planModeOpenAiProfileName", undefined)
 		expect(patch).toHaveProperty("actModeOpenAiProfileName", undefined)
 	})
+
+	describe("field edits", () => {
+		const fieldProfile = (name: string, baseUrl: string) => ({
+			name,
+			baseUrl,
+			apiKey: `key-${name}`,
+			azureApiVersion: "2024-01-01",
+			modelId: `model-${name}`,
+		})
+		const P1_URL = "https://192.0.2.10:11444/v1"
+		const P2_URL = "https://198.51.100.7:11444/v1"
+		const NEW_URL = "https://192.0.2.22:11444/v1"
+
+		function setFieldState(planActSeparateModelsSetting: boolean, planProfile: string | undefined, actProfile = planProfile) {
+			useSettingsStore.setState({
+				planActSeparateModelsSetting,
+				apiConfiguration: {
+					openAiBaseUrl: P1_URL,
+					openAiCompatibleProfiles: [fieldProfile("p1", P1_URL), fieldProfile("p2", P2_URL)],
+					planModeOpenAiProfileName: planProfile,
+					actModeOpenAiProfileName: actProfile,
+				},
+				pendingApiConfigurationUpdates: {},
+			})
+		}
+
+		type Persisted = { openAiCompatibleProfiles?: Array<{ name: string; [key: string]: unknown }>; [key: string]: unknown }
+		const lastUpdate = (): Persisted => handleFieldsChange.mock.calls.at(-1)?.[0]
+		const byName = (update: Persisted, name: string) => update.openAiCompatibleProfiles?.find((p) => p.name === name)
+
+		it("writes a Base URL edit to the selected profile", async () => {
+			setFieldState(false, "p1")
+			render(<OpenAICompatibleProvider currentMode="plan" showModelOptions={false} />)
+			fireEvent.input(screen.getByPlaceholderText("Enter base URL..."), { target: { value: NEW_URL } })
+
+			await waitFor(() => expect(handleFieldsChange).toHaveBeenCalled())
+			const update = lastUpdate()
+			expect(update.openAiBaseUrl).toBe(NEW_URL)
+			expect(byName(update, "p1")?.baseUrl).toBe(NEW_URL)
+			expect(byName(update, "p2")).toEqual(fieldProfile("p2", P2_URL))
+		})
+
+		it("writes an API key edit to the selected profile", async () => {
+			setFieldState(false, "p1")
+			render(<OpenAICompatibleProvider currentMode="plan" showModelOptions={false} />)
+			fireEvent.input(screen.getByPlaceholderText("Enter API Key..."), { target: { value: "new-key" } })
+
+			await waitFor(() => expect(handleFieldsChange).toHaveBeenCalled())
+			const update = lastUpdate()
+			expect(update.openAiApiKey).toBe("new-key")
+			expect(byName(update, "p1")?.apiKey).toBe("new-key")
+			expect(byName(update, "p2")).toEqual(fieldProfile("p2", P2_URL))
+		})
+
+		it("writes an Azure API version edit to the selected profile", async () => {
+			setFieldState(false, "p1")
+			render(<OpenAICompatibleProvider currentMode="plan" showModelOptions={false} />)
+			fireEvent.input(screen.getByPlaceholderText(/^Default: /), { target: { value: "2025-02-02" } })
+
+			await waitFor(() => expect(handleFieldsChange).toHaveBeenCalled())
+			const update = lastUpdate()
+			expect(update.azureApiVersion).toBe("2025-02-02")
+			expect(byName(update, "p1")?.azureApiVersion).toBe("2025-02-02")
+			expect(byName(update, "p2")).toEqual(fieldProfile("p2", P2_URL))
+		})
+
+		it("writes only the field when no profile is selected", async () => {
+			setFieldState(false, undefined)
+			render(<OpenAICompatibleProvider currentMode="plan" showModelOptions={false} />)
+			fireEvent.input(screen.getByPlaceholderText("Enter base URL..."), { target: { value: NEW_URL } })
+
+			await waitFor(() => expect(handleFieldsChange).toHaveBeenCalled())
+			const update = lastUpdate()
+			expect(update).toEqual({ openAiBaseUrl: NEW_URL })
+			expect(update).not.toHaveProperty("openAiCompatibleProfiles")
+		})
+
+		it("writes only the field when the selected profile no longer exists", async () => {
+			setFieldState(false, "gone")
+			render(<OpenAICompatibleProvider currentMode="plan" showModelOptions={false} />)
+			fireEvent.input(screen.getByPlaceholderText("Enter base URL..."), { target: { value: NEW_URL } })
+
+			await waitFor(() => expect(handleFieldsChange).toHaveBeenCalled())
+			expect(lastUpdate()).toEqual({ openAiBaseUrl: NEW_URL })
+		})
+
+		it("syncs only the current mode's profile when Plan and Act are separate", async () => {
+			setFieldState(true, "p1", "p2")
+			render(<OpenAICompatibleProvider currentMode="plan" showModelOptions={false} />)
+			fireEvent.input(screen.getByPlaceholderText("Enter base URL..."), { target: { value: NEW_URL } })
+
+			await waitFor(() => expect(handleFieldsChange).toHaveBeenCalled())
+			const update = lastUpdate()
+			expect(byName(update, "p1")?.baseUrl).toBe(NEW_URL)
+			expect(byName(update, "p2")?.baseUrl).toBe(P2_URL)
+		})
+	})
 })

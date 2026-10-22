@@ -45,7 +45,7 @@ interface OpenAICompatibleProviderProps {
 export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMode }: OpenAICompatibleProviderProps) => {
 	const { apiConfiguration, remoteConfigSettings, openAiModels, refreshOpenAiModels, planActSeparateModelsSetting } =
 		useSettingsStore()
-	const { handleFieldChange, handleModeFieldChange, handleModeFieldsChange, handleFieldsChange } = useApiConfigurationHandlers()
+	const { handleModeFieldChange, handleModeFieldsChange, handleFieldsChange } = useApiConfigurationHandlers()
 
 	const [modelConfigurationSelected, setModelConfigurationSelected] = useState(false)
 	const [isRefreshingModels, setIsRefreshingModels] = useState(false)
@@ -87,16 +87,28 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 			planActSeparateModelsSetting,
 		)
 
-	const persistOpenAiHeaders = (headers: Record<string, string>) => {
-		if (!currentProfileName || !currentProfile) return handleFieldChange("openAiHeaders", headers)
+	// Inference reads the selected profile's values, so an edit to a connection field must update the
+	// profile as well as the top-level field that the settings view and the model list read.
+	const persistProfileFields = (
+		updates: Partial<Pick<OpenAiCompatibleProfile, "baseUrl" | "apiKey" | "headers" | "azureApiVersion">>,
+	): Promise<boolean> => {
+		const fieldUpdates = {
+			...("baseUrl" in updates && { openAiBaseUrl: updates.baseUrl }),
+			...("apiKey" in updates && { openAiApiKey: updates.apiKey }),
+			...("headers" in updates && { openAiHeaders: updates.headers }),
+			...("azureApiVersion" in updates && { azureApiVersion: updates.azureApiVersion }),
+		}
+		if (!currentProfileName || !currentProfile) return handleFieldsChange(fieldUpdates)
 
 		return handleFieldsChange({
-			openAiHeaders: headers,
+			...fieldUpdates,
 			openAiCompatibleProfiles: profiles.map((profile: OpenAiCompatibleProfile) =>
-				profile.name === currentProfileName ? { ...profile, headers } : profile,
+				profile.name === currentProfileName ? { ...profile, ...updates } : profile,
 			),
 		})
 	}
+
+	const persistOpenAiHeaders = (headers: Record<string, string>) => persistProfileFields({ headers })
 
 	const handleProfileChange = async (e: any) => {
 		const name = e.target.value
@@ -269,7 +281,7 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 								helpText="The base URL of the OpenAI-compatible API. Note: Do not include /chat/completions at the end."
 								initialValue={apiConfiguration?.openAiBaseUrl || ""}
 								onChange={(value: string) => {
-									handleFieldChange("openAiBaseUrl", value)
+									persistProfileFields({ baseUrl: value })
 									debouncedRefreshOpenAiModels(value, apiConfiguration?.openAiApiKey)
 								}}
 								placeholder={"Enter base URL..."}
@@ -286,7 +298,7 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 				<ApiKeyField
 					initialValue={apiConfiguration?.openAiApiKey || ""}
 					onChange={(value: string) => {
-						handleFieldChange("openAiApiKey", value)
+						persistProfileFields({ apiKey: value })
 						debouncedRefreshOpenAiModels(apiConfiguration?.openAiBaseUrl, value)
 					}}
 					providerName="OpenAI Compatible"
@@ -416,7 +428,7 @@ export const OpenAICompatibleProvider = ({ showModelOptions, isPopup, currentMod
 					<DebouncedTextField
 						disabled={remoteConfigSettings?.azureApiVersion !== undefined}
 						initialValue={apiConfiguration?.azureApiVersion || ""}
-						onChange={(value: string) => handleFieldChange("azureApiVersion", value)}
+						onChange={(value: string) => persistProfileFields({ azureApiVersion: value })}
 						placeholder={`Default: ${azureOpenAiDefaultApiVersion}`}
 						style={{ width: "100%" }}
 						type="text"
